@@ -5,7 +5,7 @@
    For VPNs / strict NATs add a TURN relay (RELAY SETTINGS in the lobby, or the constants below). */
 (function(){
 'use strict';
-const VER='3.2';
+const VER='3.3';
 let LOC=location;try{if(window.parent!==window&&window.parent.location.origin===location.origin)LOC=window.parent.location}catch(e){}
 const IFR=window.parent!==window&&LOC!==location;const q=new URLSearchParams(LOC.search);
 const $=id=>document.getElementById(id);
