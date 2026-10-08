@@ -22,7 +22,7 @@ h1{margin:0;font-size:28px;letter-spacing:.18em;font-weight:700}h1 span{color:va
 </div><small style="color:var(--m)">Esc releases the mouse &middot; the Menu button (top-left) returns here</small></div>
 <button id="back" onclick="home()">&lsaquo; Menu</button>
 <script>
-const GAMES=['rust.html?v=32','csgo.html?v=32'];let fr=null;
+const GAMES=['rust.html?v=33','csgo.html?v=33'];let fr=null;
 function play(i){fr=document.createElement('iframe');fr.id='g';fr.allow='autoplay; fullscreen; pointer-lock; clipboard-write';fr.style.display='block';fr.src=GAMES[i];document.body.appendChild(fr);$h.style.display='none';back.style.display='block';fr.addEventListener('load',()=>{try{fr.contentWindow.focus()}catch(e){}})}
 function home(){try{document.exitPointerLock()}catch(e){}if(fr){fr.remove();fr=null}back.style.display='none';$h.style.display='flex'}
 const $h=document.getElementById('home');
