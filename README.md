@@ -1,7 +1,7 @@
-# HvH Sandbox - Online 1v1 (net v3)
+# HvH Sandbox - Online 1v1 (net v3.1)
 
 Upload ALL files in this folder (including the hidden .nojekyll) to the ROOT of your GitHub Pages repo, replacing the old ones.
-DELETE the old peerjs.min.js - it is no longer used. Then hard-refresh (Ctrl+Shift+R). The lobby footer must say "net v3.0"; if it
+DELETE the old peerjs.min.js - it is no longer used. Then hard-refresh (Ctrl+Shift+R). The lobby footer must say "net v3.1"; if it
 says anything else you are looking at a cached/old copy.
 
 ## Playing
