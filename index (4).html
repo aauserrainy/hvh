@@ -1,0 +1,31 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>HvH Sandbox</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#0d0e10;--p:#16181b;--l:#2a2d33;--t:#d4d6d9;--m:#8a8f97;--a:#9fca2b;box-sizing:border-box}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#0d0e10}}
+*{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--t);font:14px Tahoma,Verdana,sans-serif}
+#home{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:calc(20px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px));background:radial-gradient(900px 500px at 50% 0,#1e2530,var(--bg))}
+h1{margin:0;font-size:28px;letter-spacing:.18em;font-weight:700}h1 span{color:var(--a)}
+.bar{height:2px;width:min(520px,80vw);background:linear-gradient(90deg,#9fca2b,#34c4e5,#a057e8,#ff8a3d)}
+.cards{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+.card{width:min(300px,88vw);background:var(--p);border:1px solid var(--l);padding:20px;cursor:pointer;transition:.15s;text-align:left;color:inherit;font:inherit}
+.card:hover{border-color:var(--c);transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.5),0 0 0 1px var(--c) inset}
+.card h2{margin:0 0 4px;font-size:20px;color:var(--c)}.card small{color:var(--m)}.card ul{margin:14px 0 0;padding-left:16px;color:#b9bdc3;line-height:1.7;font-size:12.5px}
+.card b{display:block;margin-top:16px;color:var(--c);letter-spacing:.1em;font-size:12px}
+#back{position:fixed;left:calc(8px + env(safe-area-inset-left,0px));top:calc(8px + env(safe-area-inset-top,0px));z-index:99;display:none;background:rgba(10,11,13,.7);color:#cfd2d6;border:1px solid #333;padding:4px 9px;font:11px Tahoma;cursor:pointer;opacity:.55}#back:hover{opacity:1}
+#g{position:fixed;inset:0;width:100%;height:100%;border:0;display:none;background:#000}
+</style></head><body>
+<div id="home"><h1>HvH <span>SANDBOX</span></h1><div class="bar"></div>
+<div class="cards">
+<button class="card" style="--c:#ff8a3d" onclick="play(0)"><h2>Rust HvH</h2><small>Tiny 1v15 airfield arena</small><ul><li>Silent aim, aimlock, manipulation</li><li>Bow that never misses</li><li>AK-47 / MP5, headshot sounds</li><li>Bots see you, hear shots, respawn instantly</li><li>Online 1v1: ONLINE button in game</li></ul><b>PLAY &rsaquo;</b></button>
+<button class="card" style="--c:#3f84e8" onclick="play(1)"><h2>CS:GO HvH</h2><small>Your original sandbox</small><ul><li>Ragebot, anti-aim, desync</li><li>Resolver, fake lag</li><li>AK-47, M4A, AWP, Scout, Deagle</li><li>Unchanged from your file</li><li>Online 1v1: ONLINE button in game</li></ul><b>PLAY &rsaquo;</b></button>
+</div><small style="color:var(--m)">Esc releases the mouse &middot; the Menu button (top-left) returns here</small></div>
+<button id="back" onclick="home()">&lsaquo; Menu</button>
+<script>
+const GAMES=['rust.html?v=32','csgo.html?v=32'];let fr=null;
+function play(i){fr=document.createElement('iframe');fr.id='g';fr.allow='autoplay; fullscreen; pointer-lock; clipboard-write';fr.style.display='block';fr.src=GAMES[i];document.body.appendChild(fr);$h.style.display='none';back.style.display='block';fr.addEventListener('load',()=>{try{fr.contentWindow.focus()}catch(e){}})}
+function home(){try{document.exitPointerLock()}catch(e){}if(fr){fr.remove();fr=null}back.style.display='none';$h.style.display='flex'}
+const $h=document.getElementById('home');
+
+const _q=new URLSearchParams(location.search);if(_q.get('game')!==null)play(+_q.get('game'));
+</script></body></html>
