@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>HvH Sandbox - Online 1v1</title>
+<style>
+:root{--a:#3f84e8;--bg:#0e0f12;--p:#16181c;--l:#2a2d33;--t:#e8e8ea;--m:#8b8f98;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e0f12}}:root[data-theme="dark"]{--bg:#0e0f12}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:14px/1.5 Tahoma,Verdana,sans-serif;min-height:100vh}
+header{padding:28px 24px 8px;max-width:980px;margin:0 auto}h1{margin:0;font-size:24px;letter-spacing:.2em}h1 b{color:var(--a)}header p{color:var(--m);margin:8px 0 0}
+.bar{height:2px;background:linear-gradient(90deg,#9fca2b,#34c4e5,#a057e8,#ff8a3d)}
+main{max-width:980px;margin:22px auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+a.card{display:block;background:var(--p);border:1px solid #000;box-shadow:0 0 0 1px #34363a;padding:20px;text-decoration:none;color:inherit}a.card:hover{box-shadow:0 0 0 1px var(--a)}
+a.card h2{margin:0 0 6px;font-size:16px;letter-spacing:.12em}a.card span{color:var(--a);font-size:11px;letter-spacing:.14em}a.card p{color:var(--m);margin:10px 0 0;font-size:13px}
+section{max-width:980px;margin:6px auto 40px;padding:0 24px;color:var(--m)}section h3{color:var(--t);letter-spacing:.12em;font-size:13px}ol{padding-left:20px}li{margin:4px 0}code{background:#1b1c1f;padding:1px 5px;color:var(--t)}
+</style></head><body>
+<div class="bar"></div>
+<header><h1><b>HvH</b> SANDBOX</h1><p>Practice offline against bots, or play a friend 1v1 online. Pick a game:</p></header>
+<main>
+<a class="card" href="csgo.html"><span>PLAY</span><h2>CS:GO HvH</h2><p>Mirage, ragebot, anti-aim and resolver, manipulation, deathmatch. Online 1v1 supported.</p></a>
+<a class="card" href="rust.html"><span>PLAY</span><h2>Rust HvH</h2><p>Open island, 1,000 bots, bow, inventory, base building. Online 1v1 supported.</p></a>
+<a class="card" href="mirage.html"><span>VIEW</span><h2>Mirage map viewer</h2><p>Orbit around the map and fly to callouts.</p></a>
+</main>
+<section><h3>HOW TO PLAY A FRIEND</h3><ol>
+<li>You: open a game and click <code>ONLINE 1v1</code> (top left), then <code>HOST A MATCH</code>.</li>
+<li>Send your friend the room code, or press <code>COPY LINK</code> and send the link.</li>
+<li>Friend: opens the link (it joins automatically), or types the code and presses <code>JOIN</code>.</li>
+<li>When it says Connected, click the game to capture the mouse. Esc frees the mouse again.</li>
+</ol><p>Stuck connecting? Try Chrome or Edge, turn off VPNs, and have the host re-host. See the README for strict-network fixes.</p></section>
+</body></html>
