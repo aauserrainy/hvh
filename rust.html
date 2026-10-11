@@ -25,11 +25,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%}#h{pointer-events:none}
 <div id="menu"><div class="bar"></div><div class="cols" id="mc"></div></div>
 <div id="start"><h1><b>RUST</b> HvH SANDBOX</h1><div>WASD move &middot; Shift sprint &middot; C crouch &middot; Space jump &middot; LMB use/shoot (hold to draw the bow) &middot; E interact/pick up<br>1-6 hotbar &middot; Tab inventory &middot; R cycle build piece (Building Plan) &middot; K manipulation &middot; Right Shift cheat menu<br>Your base and inventory are saved automatically.</div><div style="color:var(--a)">Click to play</div></div>
 
-<script src="net.js?v=33"></script>
+<script src="net.js?v=34"></script>
+<script src="audio.js?v=34"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const $=id=>document.getElementById(id),V=THREE.Vector3;
-const S={rb:true,autofire:false,silent:true,fov:60,hc:30,rrange:220,hbox:'Head',nsp:false,manip:true,mrange:20,magic:true,esp:true,names:true,dist:true,tracers:true,cfov:70,bhop:true,speed:1,bvis:100,bhear:true,bowhit:true,nrc:false,aimlock:true,alsm:16};
+const S={hs_on:true,hs_head:'Rust headshot',hs_body:'Flesh',hs_master:80,hs_hvol:100,hs_bvol:70,gfx:'Quality',vig:true,rb:true,autofire:false,silent:true,fov:60,hc:30,rrange:220,hbox:'Head',nsp:false,manip:true,mrange:20,magic:true,esp:true,names:true,dist:true,tracers:true,cfov:70,bhop:true,speed:1,bvis:100,bhear:true,bowhit:true,nrc:false,aimlock:true,alsm:16};
 const R=new THREE.WebGLRenderer({canvas:$('c'),antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,1.5));R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
 const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(70,1,.1,2600);sc.add(cam);
 sc.background=new THREE.Color(0x9ec8e8);sc.fog=new THREE.Fog(0xb8d4e8,260,1700);
@@ -135,7 +136,9 @@ function ptFree(x,y,z){if(y<G(x,z)+.25)return false;for(const b of near(x,z))if(
 function killBot(i,by){const b=BOTS[i];b.alive=0;b.rs=.05;updBotMat(i);if(by){notify('Killed '+['','T1','T2','T3'][b.tier]+' bot',WP[b.w].n,'#8fe03a');SND.die()}
 const m=new THREE.Mesh(new THREE.BoxGeometry(.7,.14,.28),new THREE.MeshBasicMaterial({color:[0,0x5dd35d,0x4aa3ff,0xff5050][b.tier]}));const y=G(b.x,b.z)+.25;m.position.set(b.x,y,b.z);sc.add(m);DROPS.push({x:b.x,y,z:b.z,w:b.w,m});if(DROPS.length>260){const d=DROPS.shift();sc.remove(d.m)}}
 const DROPS=[];
-function hitBot(i,dmg,head){const b=BOTS[i];if(!b.alive)return;if(b.remote){Net.send({t:'d',d:dmg*(head?2:1)});hitm=.25;hitH=head;head?SND.head():SND.tink();return}b.hp-=dmg*(head?2:1);hitm=.25;hitH=head;head?SND.head():SND.tink();b.aggro=6;botAlert(b,P.x,P.z,.7,6);if(b.hp<=0)killBot(i,1)}
+function hsOpts(h){return{on:!!S.hs_on,pack:h?S.hs_head:S.hs_body,vol:S.hs_master/100*(h?S.hs_hvol:S.hs_bvol)/100}}
+function hsPlay(h){if(!(window.HvhAudio&&HvhAudio.hit('rust',h,hsOpts(h))))if(!window.HvhAudio)h?SND.head():SND.tink()}
+function hitBot(i,dmg,head){const b=BOTS[i];if(!b.alive)return;if(b.remote){Net.send({t:'d',d:dmg*(head?2:1)});hitm=.25;hitH=head;hsPlay(!!head);return}b.hp-=dmg*(head?2:1);hitm=.25;hitH=head;hsPlay(!!head);b.aggro=6;botAlert(b,P.x,P.z,.7,6);if(b.hp<=0)killBot(i,1)}
 /* beams (tracers) */
 const BG=new THREE.BoxGeometry(.03,.03,1),BEAMS=[];function beam(a,b,col,life=.3){const m=new THREE.Mesh(BG,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));m.position.copy(a).add(b).multiplyScalar(.5);m.scale.set(1,1,a.distanceTo(b));m.lookAt(b);m.life=m.l0=life;sc.add(m);BEAMS.push(m)}
 /* arrows */
@@ -331,11 +334,17 @@ if(dead){X.fillStyle='rgba(0,0,0,.6)';X.fillRect(0,0,w,h);X.fillStyle='#ff4d4d';
 ['Manipulation',[['c','manip','Manipulation (hold K)'],['s','mrange','Range (dm)',5,40],['c','magic','Magic bullet (through everything)']]],
 ['Bots',[['s','bvis','Bot vision range %',30,200],['c','bhear','Bots hear gunshots']]],
 ['Visuals',[['c','esp','ESP boxes'],['c','names','Name / weapon tier'],['c','dist','Distance'],['c','tracers','Bullet tracers'],['s','cfov','Field of view',50,110]]],
-['Misc',[['c','bhop','Bunny hop'],['s','speed','Move speed x',1,4]]]];
+['Misc',[['c','bhop','Bunny hop'],['s','speed','Move speed x',1,4]]],
+['Hit sounds',[['c','hs_on','Enable hit sounds'],['d','hs_head','Headshot sound',(window.HvhAudio?HvhAudio.lists.rust.head:['Rust headshot'])],['d','hs_body','Body-hit sound',(window.HvhAudio?HvhAudio.lists.rust.body:['Flesh'])],['s','hs_master','Master volume %',0,100],['s','hs_hvol','Headshot volume %',0,100],['s','hs_bvol','Body-hit volume %',0,100]]],
+['Graphics',[['d','gfx','Graphics quality',['Quality','Performance']],['c','vig','Vignette / color grade']]]];
 const mc=$('mc'),cs=[document.createElement('div'),document.createElement('div')];cs.forEach(c=>mc.appendChild(c));
 col.forEach(([t,rows],gi)=>{const g=document.createElement('div');g.className='g';g.innerHTML='<b>'+t+'</b>';rows.forEach(([ty,k,l,a,b])=>{const r=document.createElement('div');r.className='r';if(ty=='c'){const c=document.createElement('div');c.className='cb'+(S[k]?' on':'');const lb=document.createElement('label');lb.textContent=l;const f=()=>{S[k]=!S[k];c.className='cb'+(S[k]?' on':'')};c.onclick=lb.onclick=f;r.append(c,lb)}
 else if(ty=='s'){const lb=document.createElement('label');lb.textContent=l;const i=document.createElement('input');i.type='range';i.min=a;i.max=b;i.value=S[k];const v=document.createElement('input');v.className='vi';v.value=S[k];i.oninput=()=>{S[k]=+i.value;v.value=i.value};v.onchange=()=>{const n=cl(parseFloat(v.value)||+i.value,a,b);i.value=n;i.oninput()};r.append(lb,i,v)}
-else{const lb=document.createElement('label');lb.textContent=l;const s=document.createElement('select');a.forEach(o=>s.add(new Option(o)));s.value=S[k];s.onchange=()=>S[k]=s.value;r.append(lb,s)}g.appendChild(r)});cs[gi%2].appendChild(g)})})();
+else{const lb=document.createElement('label');lb.textContent=l;const s=document.createElement('select');a.forEach(o=>s.add(new Option(o)));s.value=S[k];s.onchange=()=>{S[k]=s.value;if(k=='hs_head'||k=='hs_body'){window.HvhAudio&&HvhAudio.preview(k=='hs_head',hsOpts(k=='hs_head'))}if(k=='gfx')applyGfx()};r.append(lb,s)}g.appendChild(r)});cs[gi%2].appendChild(g)})})();
+
+const VIG=document.createElement('div');VIG.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:2;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(20,14,6,.45) 100%);mix-blend-mode:multiply';document.body.appendChild(VIG);
+function applyGfx(){const q=S.gfx=='Quality';R.setPixelRatio(q?Math.min(devicePixelRatio,1.5):1);R.shadowMap.enabled=q;resize();sc.traverse(o=>{if(o.material)o.material.needsUpdate=true});}
+setInterval(()=>{VIG.style.display=S.vig?'block':'none'},500);
 BOTS.forEach((_,i)=>updBotMat(i));BOTS.forEach(b=>b.y=G(b.x,b.z));BOTS.forEach((_,i)=>updBotMat(i));
 requestAnimationFrame(tick);
 </script></body></html>
