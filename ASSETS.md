@@ -5,6 +5,7 @@
 | Item | Source | License | File | Status |
 |---|---|---|---|---|
 | three.js r128 | cdnjs (CDN, not bundled) | MIT | loaded from CDN by `csgo.html` / `rust.html` | in use |
+| Fengari (Lua 5.3 in JavaScript) | github.com/fengari-lua/fengari-web v0.1.4 | MIT | `lib/fengari-web.js`, `lib/FENGARI-LICENSE.txt` | in use (Lua scripting, CS:GO) |
 | Characters, first-person arms, weapons (CS:GO) | procedural three.js geometry, original | project's own | `csgo.html` | in use |
 | Textures (sand, brick, wood, sky) | procedural canvas textures, original | project's own | `csgo.html` | in use |
 | Muzzle flash, impact particles | procedural sprites, original | project's own | `csgo.html` | in use |
