@@ -43,6 +43,11 @@ const P={
   'Flesh':(a,t,v)=>{noise(a,t,.07,.7*v,'lowpass',900);osc(a,t,'sine',95,45,.11,.7*v);noise(a,t,.015,.3*v,'bandpass',2200,2)}
  }
 };
+const SX={
+ reload:(c,t,v)=>{noise(c,t,.02,.5*v,'bandpass',2200,3);osc(c,t,'square',380,300,.04,.12*v);noise(c,t+.55,.05,.6*v,'lowpass',900);osc(c,t+.55,'sine',160,90,.08,.4*v);noise(c,t+1.05,.03,.6*v,'highpass',2500);osc(c,t+1.05,'square',700,520,.05,.14*v);noise(c,t+1.18,.04,.5*v,'bandpass',1500,2)},
+ draw:(c,t,v)=>{noise(c,t,.05,.35*v,'bandpass',1800,2);osc(c,t+.12,'square',520,420,.03,.1*v)},
+ inspect:(c,t,v)=>{noise(c,t,.03,.25*v,'highpass',3000);noise(c,t+.9,.03,.25*v,'highpass',3000)}};
+A.sfx=function(name,vol){const a=ctx();if(!a||!SX[name])return false;try{SX[name](a,a.currentTime+.001,Math.min(1,vol==null?.6:vol))}catch(e){return false}return true};
 A.names={head:Object.keys(P.head),body:Object.keys(P.body)};
 /* recommended lists per mode (shown in each game's menu) */
 A.lists={csgo:{head:['Skeet','Bell','Metallic','Pop','Double tick'],body:['Tick','Thud','Soft pop','Hitmarker']},
