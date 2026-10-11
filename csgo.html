@@ -201,7 +201,7 @@ b.apT=(b.apT||0)-dt*S.baa_spd/100;if(b.apT<=0){b.apT=.12+Math.random()*.3;b.apF=
 if(!b.prof0)b.prof0=['Spin','Jitter','Static','Down','Crouch'][Math.floor(Math.random()*5)];const pf=b.profFix?b.prof0:(S.baa_prof=='Mixed'?b.prof0:S.baa_prof);b.pf=pf;
 let pt=S.baa_pitch=='Down'?-.85:S.baa_pitch=='Up'?.7:S.baa_pitch=='Jitter'?(b.apF?-.85:.55):0,yw=b.apJ*S.baa_head/57.3*(b.apF?1:.6);
 if(pf=='Spin'){b.apS=(b.apS||0)+dt*9*S.baa_spd/100;yw=Math.sin(b.apS)*S.baa_head/57.3*1.6}else if(pf=='Static'){pt=0;yw=b.side*S.baa_head/57.3}else if(pf=='Down'){pt=-.85;yw=b.side*S.baa_head/57.3*.4}else if(pf=='Crouch'){pt=-.3}
-b.cT=(pf=='Crouch'||(S.bs_crouch&&b.see&&Math.sin(ts*.7+b.ph*3)>.4))?1:0;b.cs=(b.cs||0)+(b.cT-(b.cs||0))*Math.min(1,dt*8);g.scale.y=1-.3*b.cs;
+b.cT=((pf=='Crouch'&&Math.sin(ts*1.3+b.ph*2)>0)||(S.bs_crouch&&b.see&&Math.sin(ts*.7+b.ph*3)>.4))?1:0;b.cs=(b.cs||0)+(b.cT-(b.cs||0))*Math.min(1,dt*8);g.scale.y=1-.3*b.cs;
 const k=Math.min(1,dt*14);b.apP=(b.apP||0)+(pt-(b.apP||0))*k;b.apY=(b.apY||0)+(yw-(b.apY||0))*k;hg.rotation.x=b.apP;hg.rotation.y=b.apY;g.rotation.y+=b.side*S.baa_lean/100*.5*Math.sign(b.apY||1)*0+b.apY*S.baa_lean/100*.6}
 function mkHuman(n){const g=new THREE.Group();body(g,0x5d6b46,0x8f7a54);{const hs=g.children.filter(o=>o.userData&&o.userData.head),hg=new THREE.Group();hg.position.y=1.5;hs.forEach(o=>{g.remove(o);o.position.y-=1.5;hg.add(o)});g.add(hg);g.userData.hg=hg}const gg=n=='Knife'?mkKnife(0):gunGroup(n);gg.position.set(.22,1.28,-.1);g.add(gg);return g}
 function mkGhost(){const g=pm.clone();g.traverse(o=>{if(o.material){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=.3}});return g}
@@ -319,7 +319,7 @@ if(!hs.length)return 0;let o=hs[0].object;while(o&&!o.userData.bot)o=o.parent;co
 const SPR=()=>{const w=S.weapon;return(W_[w].p?.012:(w=='AWP'||w=='Scout')?.002:.01)*(Math.hypot(P.vx,P.vz)>1?4:1)},rv=sp=>new V((Math.random()-.5)*2*sp,(Math.random()-.5)*2*sp,(Math.random()-.5)*2*sp);
 function rage(t,mu){if(kn||!S.rage||(!mu&&t-last<W_[S.weapon].r*(S.dt?.5:1)))return;if(!S.autofire&&!down)return;const e=eyeM(),v=vd();let best=null,bd=1e9;
 for(const b of bots){if(b.dead)continue;const hn=S.prefbaim&&b.aa&&S.resolver=='Off'?'Chest':S.hitbox,dxz=b.x-P.x,dzz=b.z-P.z,ln=Math.hypot(dxz,dzz)||1,
-ok=!b.aa||Math.random()<Math.min(.95,Math.max(.05,({Smart:.75,'Brute-force':.55}[S.resolver]||.1)-(b.aq||.6)*.7+.15)),gsg=b.aa?(ok?b.side:-b.side):0,gs=b.aa?(ok?b.side*.28:-b.side*.532):0,p=new V(b.x+dzz/ln*gs,HB[hn],b.z-dxz/ln*gs),d=p.clone().sub(e),an=d.clone().normalize().angleTo(v)*57.3;
+ok=!b.aa||Math.random()<Math.min(.95,Math.max(.05,({Smart:.75,'Brute-force':.55}[S.resolver]||.1)-(b.aq||.6)*.7+.15)),gsg=b.aa?(ok?b.side:-b.side):0,gs=b.aa?(ok?b.side*.28:-b.side*.532):0,p=new V(b.x+dzz/ln*gs,HB[hn]*(b.g.scale.y||1),b.z-dxz/ln*gs),d=p.clone().sub(e),an=d.clone().normalize().angleTo(v)*57.3;
 if(an>S.fov||(!mgc&&!los(e,p)))continue;if(S.stop&&P.g&&!(S.bhop&&keys.Space)){P.vx=P.vz=0}
 const nd=d.clone().normalize(),sp=S.nsp?0:SPR(),hr=hn=='Head'?.17:.3;let hh=0;for(let i=0;i<40;i++){if(d.clone().cross(nd.clone().add(rv(sp)).normalize()).length()<hr)hh++}
 const hc=hh*2.5;if(hc<S.hc)continue;const k=S.sel=='Lowest HP'?b.hp:S.sel=='Nearest'?d.length():an;if(k<bd){bd=k;best=[b,hc,nd,sp,ok]}}
