@@ -23,10 +23,23 @@ architectural character, not a conversion of Valve's map.
 | three.js r128 | cdnjs (CDN, not bundled) | MIT | loaded from CDN by `csgo.html` | in use |
 | Fengari (Lua 5.3 in JavaScript) | github.com/fengari-lua/fengari-web v0.1.4 | MIT | `lib/fengari-web.js`, `lib/FENGARI-LICENSE.txt` | in use (Lua scripting, CS:GO) |
 | three.js r128 post-processing addons (EffectComposer, RenderPass, ShaderPass, MaskPass, Pass, CopyShader, SAOPass, SAOShader, DepthLimitedBlurShader, UnpackDepthRGBAShader, SMAAPass, SMAAShader) | three.js r128 `examples/js`, github.com/mrdoob/three.js | MIT | `lib/three-addons/`, `lib/three-addons/THREE-LICENSE.txt` | in use (ambient occlusion, anti-aliasing) |
+| three.js r128 `GLTFLoader`, `SkeletonUtils` | three.js r128 `examples/js`, github.com/mrdoob/three.js | MIT | `lib/three-addons/` | in use (external model pipeline) |
+| Two small test models (`probe-char.glb`, `probe-wpn.glb`, `Textures/colormap.png`) | Kenney Starter Kit FPS, github.com/KenneyNL/starter-kit-fps | CC0 1.0 | `server/fixtures/` | test fixtures only, never loaded by the game |
 | Characters, first-person arms, weapons (CS:GO) | procedural three.js geometry, original | project's own | `csgo.html` | in use |
 | Textures (sand, brick, wood, sky) | procedural canvas textures, original | project's own | `csgo.html` | in use |
 | Muzzle flash, impact particles | procedural sprites, original | project's own | `csgo.html` | in use |
 | Hit sounds (Skeet-style, Bell, Metallic, Pop, Double tick, Impact, Helmet clank, Flesh, Thud, Tink, Hitmarker...) | WebAudio synthesis, original | project's own | `audio.js` | in use |
+
+## Replacing the built-in models
+
+`assets/` is the hook for real meshes: drop in glTF 2.0 and an `assets/manifest.json`
+and the game loads them instead of the generated ones. No manifest means the built-in
+models are used, which is what GitHub Pages serves. See `assets/README.md`.
+
+Anything committed under `assets/` is published, so only redistributable work belongs
+there. Assets extracted from another game are not redistributable whatever the format;
+`.gitignore` excludes `assets/manifest.json`, `assets/models/` and `assets/textures/` so
+those can be used locally without ever entering the public repo.
 
 ## Not used, and why
 Sketchfab "CS:GO terrorist characters" models and CS wiki weapon references: these are ripped or derived from Valve's copyrighted game assets. They need a login to download and are not licensed for redistribution in a public repo. They were not downloaded or included. If you hold models you have the right to use (glTF/GLB), they can be added later through a loader.

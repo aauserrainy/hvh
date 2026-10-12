@@ -78,6 +78,8 @@ input[type=range]{box-shadow:inset 0 1px 2px #000}.g b{font-weight:700;letter-sp
 <script src="lib/three-addons/SAOPass.js"></script>
 <script src="lib/three-addons/SMAAShader.js"></script>
 <script src="lib/three-addons/SMAAPass.js"></script>
+<script src="lib/three-addons/GLTFLoader.js"></script>
+<script src="lib/three-addons/SkeletonUtils.js"></script>
 <script>
 /* ===== online ruleset =====
    Read from the session the launcher wrote. In an online match the features below
@@ -352,6 +354,74 @@ const lbls=[];function lbl(t,x,z,y=5,big){const c=document.createElement('canvas
 sc.traverse(o=>{if(o.isMesh||o.isSprite){o.updateMatrix();o.matrixAutoUpdate=false}});
 function hit(o,r){for(const b of boxes)if(o.x+r>b[0]&&o.x-r<b[2]&&o.z+r>b[1]&&o.z-r<b[3])return 1;return 0}
 function mv(o,dx,dz,r){const ox=o.x,oz=o.z;o.x+=dx;if(hit(o,r))o.x=ox;o.z+=dz;if(hit(o,r))o.z=oz;return Math.abs(o.x-ox)+Math.abs(o.z-oz)}
+/* Hoisted above `const W_` deliberately. `body()` first runs from
+   `let pm=mkHuman('Scout')` further down, and it calls `modelBody()`; with this
+   block in its original place next to body() the ASSET const was still in its
+   temporal dead zone at that point and the whole script died on load. */
+/* ===================== EXTERNAL MODEL PIPELINE =====================
+   The game generates every model in code and needs no asset files. This is the
+   hook for replacing them with real meshes without making the game depend on
+   any being present.
+
+   `assets/manifest.json` is fetched once. No manifest, an unreachable one, or
+   one that does not parse all mean the same thing: keep the procedural models.
+   That is the supported default - it is what GitHub Pages serves - so a missing
+   manifest is not logged as an error. Each entry also falls back on its own, so
+   one bad URL cannot take the game down, and nothing here blocks the match from
+   starting: models appear whenever they finish loading. */
+const ASSET={chars:{},wpn:{},ready:false,_cb:[]};
+ASSET.onReady=f=>{ASSET.ready?f():ASSET._cb.push(f)};
+/* Fit a model to the 1.8-unit player the hitboxes assume. Authored scale varies
+   wildly between sources (metres, centimetres, Blender units), and a character
+   that is 100x too large is the usual first symptom of a working import. */
+function fitScale(obj,targetH){const b=new THREE.Box3().setFromObject(obj),h=b.max.y-b.min.y;
+ return (!isFinite(h)||h<=1e-4)?1:targetH/h}
+function pickNode(root,name){if(!name)return root;let f=null;
+ root.traverse(o=>{if(!f&&o.name&&o.name.toLowerCase().indexOf(name.toLowerCase())>=0&&(o.isMesh||o.isGroup||o.isObject3D))f=o});return f}
+function findBone(root,name){let f=null;const n=(name||'head').toLowerCase();
+ root.traverse(o=>{if(!f&&o.isBone&&o.name&&o.name.toLowerCase().indexOf(n)>=0)f=o});return f}
+(function assetsBoot(){
+ if(typeof fetch!=='function'||!THREE.GLTFLoader)return;
+ let man=null;
+ const done=()=>{ASSET.ready=true;ASSET._cb.splice(0).forEach(f=>{try{f()}catch(e){}})};
+ fetch('assets/manifest.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(m=>{
+  if(!m||typeof m!=='object'){done();return}
+  man=m;const L=new THREE.GLTFLoader(),jobs=[];
+  const want={};
+  Object.keys(m.characters||{}).forEach(k=>{const c=m.characters[k];if(c&&c.url)(want[c.url]=want[c.url]||[]).push(['char',k,c])});
+  Object.keys(m.weapons||{}).forEach(k=>{const w=m.weapons[k];if(w&&w.url)(want[w.url]=want[w.url]||[]).push(['wpn',k,w])});
+  Object.keys(want).forEach(url=>{
+   jobs.push(new Promise(res=>{
+    L.load(url,gltf=>{
+     want[url].forEach(([kind,key,cfg])=>{try{
+      if(kind==='char'){
+       const sc_=cfg.scale==='auto'||cfg.scale==null?fitScale(gltf.scene,1.8):+cfg.scale;
+       ASSET.chars[key]={scene:gltf.scene,clips:gltf.animations||[],scale:sc_,yaw:+(cfg.yaw||0),headBone:cfg.headBone||'head'};
+      }else{
+       const node=pickNode(gltf.scene,cfg.node);if(!node)return;
+       const sc_=cfg.scale==='auto'||cfg.scale==null?fitScale(node,(W_[key]&&W_[key].l)||.7):+cfg.scale;
+       ASSET.wpn[key]={node,scale:sc_,muzzle:cfg.muzzle||null};
+      }}catch(e){console.warn('asset entry',key,e)}});
+     res()},undefined,err=>{console.warn('asset load failed, keeping built-in model:',url);res()})
+   }))});
+  Promise.all(jobs).then(done)
+ }).catch(()=>done())
+})();
+/* Build a character from a loaded model, or return null so the caller keeps its
+   procedural body. Hitboxes are height-based (HB) and independent of the mesh,
+   so swapping the model cannot move where a shot registers. */
+function modelBody(g,team){
+ const e=ASSET.chars[team];if(!e||!e.scene)return false;
+ let c;try{c=(THREE.SkeletonUtils&&THREE.SkeletonUtils.clone)?THREE.SkeletonUtils.clone(e.scene):e.scene.clone(true)}catch(err){return false}
+ c.scale.setScalar(e.scale);c.rotation.y=e.yaw;
+ c.traverse(o=>{if(o.isMesh||o.isSkinnedMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false}});
+ g.add(c);g.userData.model=c;
+ /* anti-aim rotates a head group on the procedural body; on a rigged model the
+    equivalent is the head bone, so aaPose can drive either. */
+ const hb=findBone(c,e.headBone);if(hb)g.userData.headBone=hb;
+ if(e.clips&&e.clips.length){const mx=new THREE.AnimationMixer(c);g.userData.mixer=mx;g.userData.clips={};
+  e.clips.forEach(cl=>{g.userData.clips[cl.name.toLowerCase()]=cl})}
+ return true}
 const W_={'Glock-18':{d:30,r:.15,l:.3,c:0x2a2a2a,p:1,$:200},'USP-S':{d:35,r:.17,l:.32,c:0x3a3a3a,p:1,$:200},P250:{d:38,r:.2,l:.32,c:0x4a4a4a,p:1,$:300},Deagle:{d:55,r:.6,l:.35,c:0xaaaaaa,p:1,$:700},Scout:{d:70,r:1.25,l:.8,c:0x3a4a3a,$:1700},'AK-47':{d:36,r:.1,l:.75,c:0x6b4a2a,$:2700},M4A4:{d:33,r:.09,l:.7,c:0x333b44,$:3100},AWP:{d:115,r:1.45,l:1.1,c:0x2f3d2a,$:4750},G3SG1:{d:45,r:.4,l:.8,c:0x222222,$:5000},Negev:{d:20,r:.002,l:.9,c:0x3a3a3a,$:1700}};
 let mates=[],pDead=0,rd=1,money=800,phase='buy',pt=5,rmsg='',score=[0,0];const V5=()=>S.mode!='Deathmatch'&&S.v5;const PIST=['Glock-18','USP-S','P250','Deagle'],ALL=Object.keys(W_);
 const HB={Head:1.65,Chest:1.3,Stomach:1.0,Legs:.5},HM={Head:3,Chest:1,Stomach:1.25,Legs:.75};
@@ -370,6 +440,9 @@ const LITE=NBOT>40;const pl=rd==1?PIST:ALL;g.userData.wn=pl[Math.floor(Math.rand
 const b={g,m,n:'Bot_'+(i+1),hp:100,dead:0,cd:Math.random(),ph:Math.random()*6,rt:0,see:0,vt:0,t:rnd(),...rnd()};g.userData.bot=b;if(!LITE){g.traverse(o=>o.castShadow=true);b.ol=mkOutline(g);b.ol.forEach(o=>o.castShadow=false)}else b.ol=[];sc.add(g);bots.push(b)}if(V5())mkMates()}
 function mkMates(){const pl=rd==1?PIST:ALL;for(let i=0;i<4;i++){const g=new THREE.Group();g.userData.wn=pl[Math.floor(Math.random()*pl.length)];body(g,0x2f5d8a,0x8f7a54,g.userData.wn);const gg=gunGroup(g.userData.wn),G=g.userData.grip;gg.position.set(G.p[0],G.p[1],G.p[2]);gg.rotation.y=G.ry;g.add(gg);g.traverse(o=>o.castShadow=true);let x,z,k=0;do{x=MXf(1685)+(Math.random()-.5)*14;z=MZf(870)+(Math.random()-.5)*14}while(hit({x,z},.6)&&++k<60);const m={g,n:'Mate_'+(i+1),hp:100,dead:0,cd:Math.random(),ph:Math.random()*6,rt:0,lt:0,x,z,t:rnd()};g.position.set(x,0,z);sc.add(g);mates.push(m)}}
 resetBots();
+/* Assets arrive after the match has already been built, so rebuild once they
+   land. Cheap: it happens at most once, and only if a manifest supplied one. */
+ASSET.onReady(()=>{if(Object.keys(ASSET.chars).length){try{resetBots()}catch(e){console.warn('model reskin',e)}}});
 const rc=new THREE.Raycaster(),eye=()=>new V(P.x,P.y+1.65-.6*(P.cr||0),P.z),vd=()=>new V(-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch));
 function los(a,b){const d=b.clone().sub(a),l=d.length();rc.set(a,d.normalize());rc.far=l-.05;return !rc.intersectObjects(walls).length}
 function endRound(w){HvhLua.emit('round_end',{won:!!w});phase='end';pt=3.5;rmsg=w?'ROUND WON':'ROUND LOST';score[w?0:1]++;money=Math.min(16000,money+(w?3250:1400));if(!w)S.weapon='Glock-18'}
@@ -377,7 +450,10 @@ function newRound(){HvhLua.emit('round_start',{round:rd+1});rd++;pDead=0;P={x:MX
 const DIF={Easy:{sp:2.4,rt:.6,rm:2.2,acc:.5,ch:.3,hs:.03,aa:1,rs:.5},Normal:{sp:3.2,rt:.35,rm:1.6,acc:1,ch:.55,hs:.08,aa:1,rs:.6},Hard:{sp:4.2,rt:.2,rm:1.2,acc:1.3,ch:.8,hs:.15,aa:1,rs:.75},Nightmare:{sp:5.2,rt:.08,rm:.9,acc:1.7,ch:.95,hs:.25,aa:1,rs:.9}};let lastV5=S.v5,lastTW=0,hurt=0,kick=0,tr=[],ac,vm,vmN='',lag={x:0,z:62,t:0};
 const dsd=()=>S.dside=='Left'?1:S.dside=='Right'?-1:(Math.floor(ts*6)%2?1:-1),FK=.9;function aaQ(){if(!S.aa)return 0;const q=.5*S.desync/58+(S.aamode=='Spin'?.25:S.aamode=='Jitter'?.2:.08)+S.aarange/58*.1+(S.dside=='Jitter'?.12:0)+(S.fl?.08:0)+(P.cr?.04:0);return Math.min(1,Math.max(0,q))}
 function fab(c,c2,blot){const FABC=window._FC||(window._FC={}),k=c+'_'+c2+'_'+blot;if(FABC[k])return FABC[k];const cv=document.createElement('canvas');cv.width=cv.height=128;const x=cv.getContext('2d'),h=n=>'#'+n.toString(16).padStart(6,'0');x.fillStyle=h(c);x.fillRect(0,0,128,128);const q=new THREE.Color(c2);let sd=c*7+c2;const rn=()=>(sd=(sd*16807)%2147483647)/2147483647;for(let i=0;i<(blot?30:320);i++){x.fillStyle='rgba('+(q.r*255|0)+','+(q.g*255|0)+','+(q.b*255|0)+','+(blot?.55:.14)+')';const w=blot?7+rn()*20:1+rn()*2.5;x.beginPath();x.ellipse(rn()*128,rn()*128,w,blot?w*.55:w,rn()*3,0,7);x.fill()}const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;return FABC[k]=t}
-function body(g,uni,vest,wn){const CT=uni===0x2f5d8a,PIS=!!(wn&&W_[wn]&&W_[wn].p),sh=c=>new THREE.Color(c).multiplyScalar(.55).getHex();
+function body(g,uni,vest,wn){const CT=uni===0x2f5d8a,PIS=!!(wn&&W_[wn]&&W_[wn].p),
+/* A real model for this team short-circuits the procedural build. The grip is
+   still published so the weapon lands in the same place either way. */
+_MDL=modelBody(g,CT?'ct':'t'),sh=c=>new THREE.Color(c).multiplyScalar(.55).getHex();
 const M=(c,m,r,map)=>new THREE.MeshStandardMaterial({color:map?0xffffff:c,map:map||null,metalness:m||0,roughness:r==null?.85:r}),
 skn=M(0xc79a72,0,.7),J=M(uni,0,.9,fab(uni,sh(uni),!CT)),PN=M(CT?0x23272e:0x4a4636,0,.9,fab(CT?0x23272e:0x4a4636,CT?0x14171b:0x2b281d,!CT)),VT=M(CT?0x1b2330:0x26262a,0,.8,fab(CT?0x1b2330:0x26262a,0x0c0c0e,0)),WB=M(CT?0x2a3547:0x3a3a30,0,.9),bt=M(0x1b1713,0,.7),sole=M(0x0b0b0c,0,.95),dk=M(0x15151a,.3,.5),gl=M(0x0d0d10,.6,.2),glv=M(CT?0x111114:0x2a241a,0,.8),HLM=M(CT?0x1a2230:0x1c1c1c,.2,.5),BAL=M(0x101012,0,.95,fab(0x101012,0x2a2a2e,0)),lens=M(CT?0x3a78c8:0x151515,.9,.15),metal=M(0x55585c,.8,.35),
 q=(x,y,z,w,h,d,m,p)=>{const o=new THREE.Mesh(rbox(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;(p||g).add(o);return o},
@@ -403,6 +479,7 @@ if(!CT){q(-.16,1.36,.28,.04,.2,.04,metal)}
    it, and every call site positions its gun from `g.userData.grip`. */
 const GP=PIS?[.07,1.235,-.33]:[.105,1.2,-.16], GRY=PIS?.1:.22;
 g.userData.grip={p:GP,ry:GRY};
+if(_MDL){g.userData.legs=[];return}
 /* support hand: on the handguard for a rifle, wrapped over the other for a
    pistol. The handguard sits ~.5 down the local -Z axis, swung by GRY. */
 const fwd=PIS?.1:.5, LH=[GP[0]-Math.sin(GRY)*fwd, GP[1]+(PIS?-.01:.015), GP[2]-Math.cos(GRY)*fwd];
