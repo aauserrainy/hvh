@@ -13,3 +13,9 @@ server/data/
 node_modules/
 npm-debug.log*
 .DS_Store
+
+# Local model assets: see assets/README.md. The manifest and any mesh or
+# texture dropped here stays out of the public repo unless added deliberately.
+assets/manifest.json
+assets/models/
+assets/textures/

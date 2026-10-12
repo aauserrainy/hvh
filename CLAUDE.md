@@ -37,6 +37,7 @@ node server/test.js         # 95 backend tests
 node server/e2e.js          # 30 browser tests, full platform (needs Playwright)
 node server/chat-e2e.js     # 24 browser tests, menu + chat
 node server/respawn-e2e.js  #  9 browser tests, 1v1 netcode
+node server/assets-e2e.js   # 15 browser tests, external model pipeline
 ```
 
 Node **22.5+** is required — the backend uses the built-in `node:sqlite`.
@@ -69,6 +70,19 @@ Node **22.5+** is required — the backend uses the built-in `node:sqlite`.
 - **Online restrictions are enforced where values are used**, not in the menu —
   `canManip()`, `canMagic()`, `moveSpeed()`. Hiding a control is not enough; a
   config import or a Lua script would walk straight past it.
+- **Models are generated in code; `assets/` is optional.** `assets/manifest.json`
+  is fetched once at startup and, if present, its glTF models replace the
+  generated ones. No manifest means the built-in models are used - that is the
+  default and what Pages serves, not an error. `assets/manifest.json`,
+  `assets/models/` and `assets/textures/` are gitignored, because the repo is
+  public and Pages serves it: only redistributable assets may be committed
+  there. Game-ripped assets are not redistributable whatever the file format.
+- **`dt` is clamped at both ends.** `now` in `tick()` is the rAF timestamp, the
+  time the frame started, while `t0` is seeded from `performance.now()` after
+  it - so a slow load can make the first frame's elapsed time negative. Every
+  accumulator that decays by `dt` then grows: that is what parked the viewmodel
+  five units behind the camera and made the weapon vanish. Do not remove the
+  lower bound.
 - **Bump the `?v=` query** on `app.js` / `net.js` / `csgo.html` when you change
   them, or Pages and browsers serve the stale file.
 - **UID 1 is the owner**, recorded once in the `meta` table at bootstrap. Deleting

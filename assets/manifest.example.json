@@ -1,0 +1,14 @@
+{
+  "_comment": "Copy to manifest.json and fill in to use real models. Absent or unreadable means the game keeps its built-in procedural models - that is the supported default, not an error.",
+  "characters": {
+    "t":  { "url": "assets/models/t.glb",  "scale": "auto", "yaw": 0, "headBone": "Head" },
+    "ct": { "url": "assets/models/ct.glb", "scale": "auto", "yaw": 0, "headBone": "Head" }
+  },
+  "animations": { "idle": "Idle", "walk": "Walk", "run": "Run", "crouch": "Crouch", "death": "Death" },
+  "weapons": {
+    "AK-47":  { "url": "assets/models/weapons.glb", "node": "ak47",  "scale": "auto", "muzzle": "muzzle" },
+    "M4A4":   { "url": "assets/models/weapons.glb", "node": "m4a1",  "scale": "auto" },
+    "AWP":    { "url": "assets/models/weapons.glb", "node": "awp",   "scale": "auto" },
+    "Scout":  { "url": "assets/models/weapons.glb", "node": "scout", "scale": "auto" }
+  }
+}
