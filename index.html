@@ -231,6 +231,63 @@ tr:last-child td{border-bottom:0}
 #load .ring{width:46px;height:46px;border-radius:50%;border:2px solid #1e242e;border-top-color:var(--a);
  animation:spin .9s linear infinite}
 @keyframes sweep{from{transform:translateX(-120%)}to{transform:translateX(360%)}}
+
+/* ---------- launch screen variants ----------
+   Four of them, picked at random per launch, so the wait does not look like
+   the same screen every single time. Each is pure CSS on the same markup -
+   nothing extra is loaded and nothing is laid out twice. */
+#load .stage{position:relative;width:132px;height:132px;display:flex;
+ align-items:center;justify-content:center}
+#load .pct{position:absolute;font:700 15px Verdana,sans-serif;color:#aeb6c4;letter-spacing:.04em}
+
+/* v1 - orbit: two counter-rotating arcs */
+#load.v1 .ring{width:112px;height:112px;border:2px solid #171c25;border-top-color:var(--a);
+ border-right-color:#2b6fd0;animation:spin 1.1s cubic-bezier(.6,.1,.4,.9) infinite}
+#load.v1 .ring:after{content:"";position:absolute;inset:16px;border-radius:50%;
+ border:2px solid #141922;border-bottom-color:#7fb3ff;animation:spin 1.7s linear reverse infinite}
+
+/* v2 - radar sweep */
+#load.v2 .ring{width:124px;height:124px;border:1px solid #1d2531;border-radius:50%;
+ background:conic-gradient(from 0deg,transparent 0deg 300deg,rgba(77,141,240,.34) 360deg);
+ animation:spin 1.9s linear infinite}
+#load.v2 .stage:before,#load.v2 .stage:after{content:"";position:absolute;border:1px solid #1b2330;
+ border-radius:50%}
+#load.v2 .stage:before{inset:26px}
+#load.v2 .stage:after{inset:50px}
+#load.v2 .blip{position:absolute;width:6px;height:6px;border-radius:50%;background:#8fe03a;
+ box-shadow:0 0 9px #8fe03a;animation:blip 1.9s ease-in-out infinite}
+@keyframes blip{0%,58%{opacity:0}62%{opacity:1}100%{opacity:0}}
+
+/* v3 - equaliser bars */
+#load.v3 .ring{width:124px;height:62px;border:0;border-radius:0;background:none;
+ display:flex;align-items:flex-end;justify-content:space-between;animation:none}
+#load.v3 .ring i{display:block;width:10px;background:linear-gradient(180deg,#7fb3ff,var(--a));
+ border-radius:2px;animation:eq 1s ease-in-out infinite}
+@keyframes eq{0%,100%{height:14%}50%{height:100%}}
+/* staggered, or the five bars pulse as one block and read as a single shape */
+#load.v3 .ring i:nth-child(1){animation-delay:0s}
+#load.v3 .ring i:nth-child(2){animation-delay:.13s}
+#load.v3 .ring i:nth-child(3){animation-delay:.26s}
+#load.v3 .ring i:nth-child(4){animation-delay:.39s}
+#load.v3 .ring i:nth-child(5){animation-delay:.52s}
+/* the readout would sit on top of the bars where it is centred by default */
+#load.v3 .pct{top:auto;bottom:4px}
+#load.v4 .pct{display:none}
+
+/* v4 - glitch wordmark */
+#load.v4 .ring{display:none}
+#load.v4 .lgo{position:relative;font-size:38px;animation:jitter 2.6s steps(1) infinite}
+#load.v4 .lgo:before,#load.v4 .lgo:after{content:attr(data-t);position:absolute;left:0;top:0;
+ width:100%;opacity:.75}
+#load.v4 .lgo:before{color:#ff4d6a;animation:gl1 2.6s steps(1) infinite}
+#load.v4 .lgo:after{color:#38d8ff;animation:gl2 2.6s steps(1) infinite}
+@keyframes jitter{0%,92%{transform:none}94%{transform:translateX(-2px)}96%{transform:translateX(2px)}}
+@keyframes gl1{0%,90%{transform:none;opacity:0}92%{transform:translate(-3px,1px);opacity:.75}100%{opacity:0}}
+@keyframes gl2{0%,90%{transform:none;opacity:0}93%{transform:translate(3px,-1px);opacity:.75}100%{opacity:0}}
+
+/* the bar is shared, but only v1 and v4 show it */
+#load.v2 .bar,#load.v3 .bar{visibility:hidden}
+
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
@@ -277,8 +334,8 @@ tr:last-child td{border-bottom:0}
   <!-- ============ MENU ============ -->
   <div id="bgfx" aria-hidden="true"><i></i></div>
 <div id="load" role="status" aria-live="polite">
-  <div class="ring"></div>
-  <div class="lgo">rainy<span>.hvh</span></div>
+  <div class="stage"><div class="ring"><i></i><i></i><i></i><i></i><i></i></div><div class="blip"></div><div class="pct" id="loadPct"></div></div>
+  <div class="lgo" data-t="rainy.hvh">rainy<span>.hvh</span></div>
   <div class="bar"><i></i></div>
   <div class="tip" id="loadTip"></div>
 </div>
@@ -589,8 +646,23 @@ const LOAD_TIPS = [
   'Press V for third person, F8 if you are the owner'
 ];
 let _tipTimer = null;
+let _pctTimer = null;
 function loadShow(){
   const el = $('load'); if (!el) return;
+  /* pick a variant per launch so the wait is not the same screen every time */
+  const v = 1 + Math.floor(Math.random() * 4);
+  el.className = 'v' + v;
+  /* the percentage eases toward 90 and stops: it reflects elapsed time, not real
+     progress, so it must never claim 100 and then sit there. The game clearing
+     the screen is what says "done". */
+  const pct = $('loadPct');
+  let shown = 0, t0 = performance.now();
+  clearInterval(_pctTimer);
+  _pctTimer = setInterval(() => {
+    const k = Math.min(1, (performance.now() - t0) / 9000);
+    shown = Math.round(90 * (1 - Math.pow(1 - k, 2.4)));
+    if (pct) pct.textContent = shown + '%';
+  }, 90);
   let n = Math.floor(Math.random() * LOAD_TIPS.length);
   const tip = $('loadTip');
   const next = () => { if (tip) { tip.textContent = LOAD_TIPS[n % LOAD_TIPS.length]; n++;
@@ -603,6 +675,7 @@ function loadHide(){
   const el = $('load'); if (!el) return;
   el.classList.remove('on');
   clearInterval(_tipTimer); _tipTimer = null;
+  clearInterval(_pctTimer); _pctTimer = null;
 }
 /* the game posts this once its first frame is on screen */
 addEventListener('message', e => { if (e && e.data === 'hvh:ready') loadHide(); });
@@ -617,7 +690,7 @@ function launch(offline, m){
   loadShow();
   setTimeout(loadHide, 25000);          /* backstop only */
   sessionStorage.setItem('hvh_session_cfg', JSON.stringify(cfg));
-  g.src = 'csgo.html?v=47&mode=' + (offline ? 'offline' : 'online');
+  g.src = 'csgo.html?v=48&mode=' + (offline ? 'offline' : 'online');
   g.style.display = 'block';
   $('leave').style.display = 'block';
   const tag = $('modeTag');

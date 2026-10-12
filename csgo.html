@@ -55,6 +55,91 @@ input[type=range]{box-shadow:inset 0 1px 2px #000}.g b{font-weight:700;letter-sp
 #pg{padding:26px 24px;gap:30px}.g{padding:18px 14px 8px}.r{margin:0 0 13px}.r.s{gap:7px}#m:not(.nl){width:800px}
 .vi{width:54px;align-self:center;text-align:center;background:#1b1c1f;color:var(--tx);border:1px solid #000;box-shadow:0 0 0 1px #2e3033 inset;font:11px Tahoma,Verdana,sans-serif;padding:2px;outline:0}.vi:focus{box-shadow:0 0 0 1px var(--a) inset}
 .r.lk{opacity:.42}.r.lk .cb,.r.lk select,.r.lk input{pointer-events:none;filter:grayscale(1)}
+
+/* ================= DEFAULT MENU SKIN =================
+   Scoped to #m:not(.nl) throughout, so the Neverlose skin is untouched. The
+   groupbox is the real Win32 kind - a 1px frame with the caption sitting ON the
+   top border, knocked out by a background patch - because that single detail is
+   what makes the panel read correctly; a caption above the frame does not. */
+#m:not(.nl){--mb:#0b0b10;--mln:#2b2b35;--mtx:#b9bec8;--mdim:#6a7080;--mfill:#22222b;
+ --mctl:#1b1b23;--mctlb:#33333e;--macc:#4a7ebb;
+ width:660px;background:var(--mb);border:1px solid #000;outline:1px solid #1e1e26;
+ box-shadow:0 18px 60px #000a;font:11px Tahoma,Verdana,sans-serif;color:var(--mtx)}
+#m:not(.nl) .bar{height:4px;background:linear-gradient(90deg,
+ #e05fa8,#a95fd0,#6f6fd0,#4a8fd4,#49c2c8,#5fc08a,#9ec45f,#d9cc5a,#e0a04e,#dc6f5a,#d9566a)}
+#m:not(.nl) .body{display:flex;align-items:stretch}
+
+/* --- icon rail --- */
+#m:not(.nl) #tabs{width:78px;flex:0 0 78px;background:var(--mb);
+ border-right:1px solid var(--mln);padding:10px 0}
+#m:not(.nl) #tabs div{height:72px;border:0;background:none;filter:none;color:#8e94a1;
+ display:flex;align-items:center;justify-content:center;box-shadow:none;
+ transition:color .14s ease,transform .14s ease}
+#m:not(.nl) #tabs div svg{width:34px;height:34px;stroke-width:1.5}
+#m:not(.nl) #tabs div:hover{color:#dfe4ec;transform:translateY(-1px)}
+#m:not(.nl) #tabs div.on{color:#fff;background:none;box-shadow:inset 2px 0 0 var(--macc)}
+
+/* --- page --- */
+#m:not(.nl) #pg{padding:14px;gap:18px 20px;grid-template-columns:1fr 1fr;
+ align-content:start;max-height:74vh}
+#m:not(.nl) .g{border:1px solid var(--mln);background:none;border-radius:2px;
+ padding:14px 12px 4px;margin:0}
+#m:not(.nl) .g b{top:-6px;left:10px;background:var(--mb);padding:0 5px;
+ color:var(--mtx);font-weight:400;font-size:11px}
+#m:not(.nl) .r{margin:0 0 9px;gap:8px;min-height:15px}
+#m:not(.nl) .r span{color:var(--mtx)}
+
+/* --- checkbox: square to the LEFT of its label --- */
+#m:not(.nl) .r.c{flex-direction:row;justify-content:flex-start;gap:9px}
+#m:not(.nl) .r.c span{order:2;flex:1}
+#m:not(.nl) .cb{order:1;flex:0 0 auto;width:8px;height:8px;border-radius:1px;
+ background:#2a2a33;border:1px solid #3a3a45;transition:background .12s,border-color .12s}
+#m:not(.nl) .cb.on{background:var(--macc);border-color:#5b8fd0;box-shadow:none}
+
+/* --- keybind chip, right aligned and quiet --- */
+#m:not(.nl) .kb{order:3;margin-left:auto;color:var(--mdim);font-size:10px;letter-spacing:.02em}
+
+/* --- slider: label row, value right aligned beneath it, then the track --- */
+#m:not(.nl) .r.s{gap:3px}
+#m:not(.nl) .r.s>div{display:flex;flex-direction:column-reverse;gap:3px}
+#m:not(.nl) .r.s .vi{align-self:flex-end;background:none;border:0;box-shadow:none;
+ color:var(--mtx);font:11px Tahoma,Verdana,sans-serif;text-align:right;width:70px;padding:0;outline:0}
+#m:not(.nl) input[type=range]{height:4px;border:0;border-radius:2px;background:var(--mfill)}
+
+/* --- controls --- */
+#m:not(.nl) select{width:100%;height:24px;background:var(--mctl);color:var(--mtx);
+ border:1px solid var(--mctlb);border-radius:2px;padding:0 6px;font:11px Tahoma,Verdana,sans-serif}
+#m:not(.nl) button{width:100%;height:26px;background:var(--mctl);color:#c3c8d2;
+ border:1px solid var(--mctlb);border-radius:2px;font:11px Tahoma,Verdana,sans-serif;
+ cursor:pointer;transition:background .13s,border-color .13s,color .13s}
+#m:not(.nl) button:hover{background:#23232d;border-color:#454553;color:#fff}
+#m:not(.nl) button:active{background:#15151c}
+#m:not(.nl) input[type=color]{width:24px;height:12px;padding:0;border:1px solid #11151c;
+ border-radius:1px;background:none;cursor:pointer}
+#m:not(.nl) input[type=color]::-webkit-color-swatch{border:0}
+#m:not(.nl) input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+#m:not(.nl) input[type=search]{background:var(--mctl);border:1px solid var(--mctlb);
+ border-radius:2px;color:var(--mtx);height:26px;font:11px Tahoma,Verdana,sans-serif}
+
+
+/* A label beside a full-width control squeezes into two or three wrapped lines,
+   which is what made these panels look unlike the reference. Stack instead:
+   caption on its own line, control full width underneath. */
+#m:not(.nl) .r:has(> button),#m:not(.nl) .r:has(> select){
+ flex-direction:column;align-items:stretch;gap:4px}
+#m:not(.nl) .r:has(> button) span,#m:not(.nl) .r:has(> select) span{flex:0 0 auto}
+#m:not(.nl) .r:has(> input[type=color]){flex-direction:row;align-items:center}
+#m:not(.nl) .r:has(> input[type=color]) span{flex:1}
+#m:not(.nl) .r > input[type=color]{margin-left:auto}
+/* the search field is ours, not the reference's - keep it, but quiet */
+#m:not(.nl) #pg > input[type=search]{height:24px;margin-bottom:4px;opacity:.75}
+#m:not(.nl) #pg > input[type=search]:focus{opacity:1}
+/* --- the panel opens rather than appearing --- */
+@keyframes menuIn{from{opacity:0;transform:translate(-50%,-50%) scale(.985)}
+ to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+#m:not(.nl).vis{animation:menuIn .13s cubic-bezier(.22,.78,.3,1) both}
+@media (prefers-reduced-motion:reduce){#m:not(.nl).vis{animation:none}
+ #m:not(.nl) #tabs div{transition:none}}
 </style></head><body>
 <canvas id="r"></canvas><canvas id="o"></canvas>
 <div id="hint">Click to play<br>WASD move, Space jump, mouse aim, LMB shoot<br>RIGHT SHIFT opens the menu, V = third person, C = crouch, Q = knife<br>Buy with keys 1-9 and 0 (B hides the list in deathmatch)</div>
@@ -111,7 +196,43 @@ let DEBUG_FLY=false;
    match runs peer to peer, so there is no authority that sees who damaged whom
    before a kill, and a made-up number is worse than an absent column. */
 const MS={k:0,d:0,dmg:0,hs:0};
-let LASTHIT=null;           /* who last damaged you, so a death credits a killer */
+/* ===================== SCREEN EFFECTS =====================
+   Grade, grain and scanlines are a CSS filter and one overlay element on top of
+   the canvas, not another post-processing pass. That is deliberate: the
+   composer is switched off entirely by Boost FPS and by the Performance preset,
+   so a pass would silently stop working for exactly the people most likely to
+   be using these. A compositor filter costs effectively nothing and survives
+   both. */
+const FXO=document.createElement('div');
+FXO.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:5;mix-blend-mode:overlay;opacity:0';
+const VIG=document.createElement('div');
+VIG.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:6;opacity:0;'+
+ 'background:radial-gradient(ellipse at 50% 50%,transparent 42%,#000 100%)';
+addEventListener('DOMContentLoaded',()=>document.body.append(FXO,VIG));
+if(document.body)document.body.append(FXO,VIG);
+/* one 64px tile of noise, tiled and nudged each frame - far cheaper than
+   regenerating noise at screen size */
+const GRAINURL=(()=>{const c=document.createElement('canvas');c.width=c.height=64;
+ const q=c.getContext('2d'),im=q.createImageData(64,64);
+ for(let i=0;i<im.data.length;i+=4){const v=Math.random()*255;
+  im.data[i]=im.data[i+1]=im.data[i+2]=v;im.data[i+3]=255}
+ q.putImageData(im,0,0);return c.toDataURL()})();
+let _fxKey='';
+function applyFX(){
+ const key=[S.wsat,S.wbri,S.wcon,S.whue,S.grain,S.grainx,S.scan,S.scanx,S.vigx,S.vig].join('|');
+ if(key===_fxKey)return; _fxKey=key;                    /* only touch the DOM on change */
+ R.style.filter='saturate('+(S.wsat/100)+') brightness('+(S.wbri/100)+') contrast('+(S.wcon/100)+')'+
+   (S.whue?' hue-rotate('+S.whue+'deg)':'');
+ const layers=[];
+ if(S.grain)layers.push('url('+GRAINURL+') repeat');
+ if(S.scan)layers.push('repeating-linear-gradient(0deg,rgba(0,0,0,'+(S.scanx/100)+') 0 1px,transparent 1px 3px)');
+ FXO.style.background=layers.join(',');
+ FXO.style.opacity=layers.length?String(S.grain?S.grainx/100:1):'0';
+ FXO.style.backgroundSize=S.grain?'64px 64px':'auto';
+ VIG.style.opacity=S.vig?String(S.vigx/100):'0';
+}
+const BIND={tp:'V',manip:'K'};   /* the keys the game actually listens for */
+let _skyPrev='';let LASTHIT=null;           /* who last damaged you, so a death credits a killer */
 function msReset(){MS.k=MS.d=MS.dmg=MS.hs=0}
 /* ===================== TAB SCOREBOARD, BLACKOUT, DEBUG FLY =====================
    Built as DOM rather than painted into the HUD canvas: it stays crisp at any
@@ -221,13 +342,13 @@ function blocked(k){return ONLINE_MATCH&&(RANKED_OFF.includes(k)||BOT_KEYS.inclu
    this is read from code that runs very early. */
 function GFX(){return S.boost?'Performance':S.gfx}
 let _bn=0;function bNote(k){const t=performance.now();if(t-_bn<1500)return;_bn=t;notify('Online match',BOT_KEYS.includes(k)?'Bot settings are offline only':'Disabled by the ranked ruleset','#ffc04d')}
-const S={baa_prof:'Mixed',bs_crouch:true,bs_jig:true,bs_rep:true,dbg_perf:false,dbg_hb:false,dbg_ins:false,baa_on:true,baa_pitch:'Jitter',baa_head:40,baa_lean:50,baa_spd:100,gfx:'Quality',boost:false,vig:true,hs_on:true,hs_head:'Skeet',hs_body:'Tick',hs_master:80,hs_hvol:100,hs_bvol:70,v5:true,luaAbs:false,luaBloom:false,ab_cross:true,ab_cstyle:'Bloom ring',ab_csz:7,ab_cgap:5,ab_ccol:'#9fca2b',ab_dyn:true,ab_kb:true,ab_kbpos:'Right',ab_kbo:0,ab_aaq:true,ab_wm:true,bl_hit:true,bl_dmg:true,bl_vig:true,bl_col:'#ff6ad5',bl_int:60,prefbaim:true,dt:false,sel:'Crosshair',lg:false,lgfov:8,lgsm:6,lgrcs:true,snap:false,dist:false,radar:true,trace:true,snd:true,vm:true,slow:false,astr:true,ptc:'Down',theme:'Skeet',rage:true,silent:false,autofire:true,resolver:'Brute-force',arrow:true,nofog:false,twalls:0,autoscope:true,stop:true,fov:60,hitbox:'Head',mindmg:30,hc:70,weapon:'Glock-18',
+const S={baa_prof:'Mixed',bs_crouch:true,bs_jig:true,bs_rep:true,dbg_perf:false,dbg_hb:false,dbg_ins:false,baa_on:true,baa_pitch:'Jitter',baa_head:40,baa_lean:50,baa_spd:100,gfx:'Quality',boost:false,wsat:100,wbri:100,wcon:100,whue:0,skyc:'#4f8fd8',fogd:170,grain:false,grainx:35,scan:false,scanx:30,vigx:45,vmx:0,vmy:0,vmz:0,vmroll:0,twid:2,vig:true,hs_on:true,hs_head:'Skeet',hs_body:'Tick',hs_master:80,hs_hvol:100,hs_bvol:70,v5:true,luaAbs:false,luaBloom:false,ab_cross:true,ab_cstyle:'Bloom ring',ab_csz:7,ab_cgap:5,ab_ccol:'#9fca2b',ab_dyn:true,ab_kb:true,ab_kbpos:'Right',ab_kbo:0,ab_aaq:true,ab_wm:true,bl_hit:true,bl_dmg:true,bl_vig:true,bl_col:'#ff6ad5',bl_int:60,prefbaim:true,dt:false,sel:'Crosshair',lg:false,lgfov:8,lgsm:6,lgrcs:true,snap:false,dist:false,radar:true,trace:true,snd:true,vm:true,slow:false,astr:true,ptc:'Down',theme:'Skeet',rage:true,silent:false,autofire:true,resolver:'Brute-force',arrow:true,nofog:false,twalls:0,autoscope:true,stop:true,fov:60,hitbox:'Head',mindmg:30,hc:70,weapon:'Glock-18',
 aa:false,aamode:'Spin',aarange:58,
 esp:false,name:true,hp:false,skel:false,chams:false,chamcol:'#ff3b6b',fovc:false,hitm:true,tp:false,cfov:90,
 bhop:true,speed:6,wm:true,ind:true,botacc:45,bots:12,diff:'Hard',desync:58,dside:'Jitter',fl:false,fll:6,nsp:false,wpn:false,night:false,lbl:true,tpd:3,accent:'#3f84e8',bres:0,manip:true,mrange:20,magic:true,glow:true,glowcol:'#ff8a1f',aach:true,bvb:false,dump:false,tcol:'#7ad0ff',hitch:true,hcol:'#ffffff',deathch:true,dcol:'#ff3b6b',mode:'Competitive'};const DEF=JSON.stringify(S);
 const SPEC={Legit:[['Aim assist',[['c','lg','Enabled (rage off, hold LMB)'],['s','lgfov','FOV',1,30],['s','lgsm','Smoothing',1,20],['c','lgrcs','Recoil control']]]],Rage:[['Aimbot',[['c','rage','Ragebot Enabled'],['c','dt','Double tap'],['d','resolver','Resolver',['Off','Brute-force','Smart']],['c','nsp','Remove recoil'],['c','prefbaim','Prefer body aim if lethal'],['d','sel','Target selection',['Crosshair','Lowest HP','Nearest']],['c','silent','Silent aim'],['c','autofire','Automatic fire'],['c','stop','Quick stop'],['c','manip','Manipulation (hold K)'],['s','mrange','Manipulation range (dm)',5,40],['c','magic','Magic bullet (through walls)'],['s','fov','Ragebot FOV',1,180],['d','hitbox','Target hitbox',['Head','Chest','Stomach','Legs']],['s','mindmg','Minimum damage',1,100],['s','hc','Minimum hitchance',0,100],['c','autoscope','Automatic scope']]]],
 'Anti-aim':[['Angles',[['c','aa','Enabled'],['d','aamode','Yaw',['Spin','Jitter','Static 180']],['d','ptc','Pitch',['Down','Up','Zero']],['s','desync','Desync amount',0,58],['d','dside','Desync side',['Left','Right','Jitter']],['c','fl','Fake lag'],['c','dump','Dump (bots miss every shot)'],['s','bres','Bot resolve chance',0,100],['s','fll','Fake lag limit',1,14],['c','slow','Slow walk'],['s','aarange','Jitter / desync range',0,180]]]],
-Visuals:[['Players',[['c','esp','Bounding box'],['c','name','Name'],['c','hp','Health bar'],['c','skel','Skeleton'],['c','glow','Enemy glow outline'],['k','glowcol','Glow color'],['c','aach','Anti-aim chams (green)'],['c','chams','Chams (through walls)'],['k','chamcol','Chams color'],['c','snap','Snaplines'],['c','dist','Distance'],['c','radar','Radar']]],['Other',[['c','fovc','Draw FOV'],['c','trace','Bullet tracers'],['k','tcol','Tracer color'],['c','hitch','Hit chams'],['k','hcol','Hit chams color'],['c','deathch','Death chams'],['k','dcol','Death chams color'],['c','arrow','Out of FOV arrow'],['d','gfx','Graphics quality',['Performance','Balanced','Quality']],['c','boost','Boost FPS (lowers graphics)'],['c','vig','Vignette / color grade'],['c','nofog','Remove fog'],['s','twalls','Transparent walls',0,100],['c','hitm','Hitmarker'],['c','tp','Third person (V)'],['s','tpd','Third person distance',1,8],['c','lbl','Map callouts'],['c','night','Night mode'],['c','wpn','Weapon name'],['c','vm','Weapon viewmodel'],['c','trace','Bullet tracers'],['c','snd','Hit sound'],['s','cfov','Camera FOV',60,120]]]],
+Visuals:[['Players',[['c','esp','Bounding box'],['c','name','Name'],['c','hp','Health bar'],['c','skel','Skeleton'],['c','glow','Enemy glow outline'],['k','glowcol','Glow color'],['c','aach','Anti-aim chams (green)'],['c','chams','Chams (through walls)'],['k','chamcol','Chams color'],['c','snap','Snaplines'],['c','dist','Distance'],['c','radar','Radar']]],['Other',[['c','fovc','Draw FOV'],['c','trace','Bullet tracers'],['k','tcol','Tracer color'],['c','hitch','Hit chams'],['k','hcol','Hit chams color'],['c','deathch','Death chams'],['k','dcol','Death chams color'],['c','arrow','Out of FOV arrow'],['d','gfx','Graphics quality',['Performance','Balanced','Quality']],['c','boost','Boost FPS (lowers graphics)'],['c','vig','Vignette / color grade'],['c','nofog','Remove fog'],['s','twalls','Transparent walls',0,100],['c','hitm','Hitmarker'],['c','tp','Third person (V)'],['s','tpd','Third person distance',1,8],['c','lbl','Map callouts'],['c','night','Night mode'],['c','wpn','Weapon name'],['c','vm','Weapon viewmodel'],['c','trace','Bullet tracers'],['c','snd','Hit sound'],['s','cfov','Camera FOV',60,120]]],['World',[['s','wsat','Saturation',0,200],['s','wbri','Brightness',50,150],['s','wcon','Contrast',50,150],['s','whue','Hue shift',-180,180],['k','skyc','Sky color'],['s','fogd','Fog distance',40,400]]],['Screen',[['c','grain','Film grain'],['s','grainx','Grain amount',5,100],['c','scan','Scanlines'],['s','scanx','Scanline strength',5,100],['s','vigx','Vignette strength',0,100]]],['Viewmodel',[['s','vmx','Offset X',-30,30],['s','vmy','Offset Y',-30,30],['s','vmz','Offset Z',-30,30],['s','vmroll','Roll',-30,30],['s','twid','Tracer width',1,6]]]],
 Misc:[['Miscellaneous',[['c','bhop','Bunny hop'],['c','astr','Auto strafe'],['s','speed','Move speed',3,12]]],['Settings',[['c','wm','Watermark'],['c','ind','Indicators']]],['Hit sounds',[['c','hs_on','Enable hit sounds'],['d','hs_head','Headshot sound',HvhAudio.lists.csgo.head],['d','hs_body','Body hit sound',HvhAudio.lists.csgo.body],['s','hs_master','Master hit volume',0,100],['s','hs_hvol','Headshot volume',0,100],['s','hs_bvol','Body hit volume',0,100],['b','hs_th','Test headshot'],['b','hs_tb','Test body hit']]],['Presets',[['k','accent','Menu color'],['d','theme','Theme',['Skeet','Neverlose']],['b','cfg_exp','Export config (copy to clipboard)'],['b','cfg_imp','Import config (paste)'],['b','save','Save config'],['b','load','Load config'],['b','reset','Reset config']]],['Debug tools',[['c','dbg_perf','Performance + network overlay'],['c','dbg_hb','Show hitboxes'],['c','dbg_ins','Bot inspector + target path']]]],Bots:[['Bots',[['d','mode','Game mode',['Competitive','Deathmatch']],['c','v5','5v5 teams (Competitive)'],['c','bvb','Bots fight each other'],['d','diff','Difficulty',['Easy','Normal','Hard','Nightmare']],['s','botacc','Bot accuracy',0,100],['s','bots','Bot count',1,1000]]],['Bot anti-aim pose',[['c','baa_on','Visible anti-aim pose'],['d','baa_prof','Profile (per bot when Mixed)',['Mixed','Spin','Jitter','Static','Down','Crouch']],['d','baa_pitch','Pitch',['Down','Up','Jitter','Off']],['s','baa_head','Head yaw jitter',0,90],['s','baa_lean','Torso twist %',0,100],['s','baa_spd','Speed %',25,300]]],['Smart bots',[['c','bs_jig','Jiggle peek'],['c','bs_crouch','Crouch peek'],['c','bs_rep','Reposition after holding angle']]]],Lua:[['Lua scripting',[['b','lua_open','Open Lua script manager']]],['Built-in overlays',[['c','luaAbs','absence.space  (inject)'],['c','luaBloom','bloom.tool  (inject)']]],['absence.space',[['c','ab_cross','Custom crosshair'],['d','ab_cstyle','Crosshair style',['Dot','Cross','Circle','Bloom ring']],['s','ab_csz','Crosshair size',2,24],['s','ab_cgap','Crosshair gap',0,20],['k','ab_ccol','Accent / crosshair color'],['c','ab_dyn','Dynamic gap (movement)'],['c','ab_kb','Keybind list'],['d','ab_kbpos','Keybind position',['Left','Right','Top','Bottom','Under crosshair']],['s','ab_kbo','Keybind offset',0,300],['c','ab_aaq','Anti-aim quality bar'],['c','ab_wm','Watermark']]],['bloom.tool',[['c','bl_hit','Bloom hitmarker'],['c','bl_dmg','Hit text'],['c','bl_vig','Screen glow on hit'],['k','bl_col','Bloom color'],['s','bl_int','Glow intensity',0,100]]]]};
 const pg=document.getElementById('pg'),tabs=document.getElementById('tabs'),M=document.getElementById('m'),nv=document.getElementById('nv');
 let curT='Rage',gi=0;const IC={Bots:'<svg viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M8.5 3.5h7"/><circle cx="9.3" cy="13" r="1.4"/><circle cx="14.7" cy="13" r="1.4"/><path d="M9.5 16.5h5M2.6 11.5v4M21.4 11.5v4"/></svg>',Legit:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 3v5M12 16v5M3 12h5M16 12h5"/></svg>',Rage:'<svg viewBox="0 0 24 24"><path d="M6 4h12v8c0 5-3 8-6 8s-6-3-6-8z"/><path d="M8 10h3M13 10h3"/><path d="M9 15h6"/></svg>','Anti-aim':'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/><path d="M12 3v18"/></svg>',Visuals:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 7a5 5 0 0 0 0 10z" fill="currentColor"/><circle cx="12" cy="12" r="8.5" stroke-dasharray="1.6 2.2"/></svg>',Misc:'<svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="9" cy="9" r="6.2" stroke-dasharray="2.2 1.9" stroke-width="2.6"/><circle cx="17" cy="17" r="2"/><circle cx="17" cy="17" r="4" stroke-dasharray="1.5 1.4" stroke-width="2"/></svg>'};
@@ -241,7 +362,11 @@ else if(ty=='s'){el=document.createElement('div');const i=document.createElement
 else if(ty=='d'){el=document.createElement('select');a.forEach(o=>el.add(new Option(o)));el.value=S[k];el.onchange=()=>{if(blocked(k)){el.value=S[k];return bNote(k)}S[k]=el.value;if(k=='theme')thm();if(k=='gfx')applyGfx()}}
 else if(ty=='b'){el=document.createElement('button');el.textContent=/^hs_t/.test(k)?'Play':k=='cfg_exp'?'Copy':k=='cfg_imp'?'Paste':'Apply';el.onclick=()=>cfg(k)}
 else{el=document.createElement('input');el.type='color';el.value=S[k];el.oninput=()=>{S[k]=el.value;if(k=='accent')document.documentElement.style.setProperty('--a',el.value)}}
-r.append(el);g.append(r)});pg.append(g)})}
+r.append(el);
+/* a keybind chip, but only where a key genuinely does this. Decorative chips
+   next to options nothing binds would misdescribe the menu. */
+if(BIND[k]){const kb=document.createElement('i');kb.className='kb';kb.textContent='['+BIND[k]+']';r.append(kb)}
+g.append(r)});pg.append(g)})}
 show('Rage');
 function thm(){const n=S.theme=='Neverlose',r=document.documentElement.style;r.setProperty('--a',n?'#16a2cc':'#3f84e8');show(curT,gi)}
 function hsOpts(head){return{on:!!(S.snd&&S.hs_on),pack:head?S.hs_head:S.hs_body,vol:S.hs_master/100*(head?S.hs_hvol:S.hs_bvol)/100}}
@@ -251,9 +376,9 @@ const R=document.getElementById('r'),O=document.getElementById('o'),X=O.getConte
 const ren=new THREE.WebGLRenderer({canvas:R,antialias:true,powerPreference:'high-performance'});ren.outputEncoding=THREE.sRGBEncoding;        /* without this every colour map is read as linear and the whole scene looks washed out */
 ren.toneMapping=THREE.ACESFilmicToneMapping;ren.toneMappingExposure=.82;ren.shadowMap.enabled=true;
 const sc=new THREE.Scene();const SKY=(()=>{const c=document.createElement('canvas');c.width=2;c.height=256;const q=c.getContext('2d'),g=q.createLinearGradient(0,0,0,256);g.addColorStop(0,'#4f8fd8');g.addColorStop(.6,'#a9cdf0');g.addColorStop(1,'#e8efe6');q.fillStyle=g;q.fillRect(0,0,2,256);return new THREE.CanvasTexture(c)})(),NC=new THREE.Color(0x0a0e1a);sc.background=SKY;sc.fog=new THREE.Fog(0xbcd6ee,60,170);
-const SKYD=(()=>{const m=new THREE.Mesh(new THREE.SphereGeometry(150,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,toneMapped:false,uniforms:{sd:{value:new THREE.Vector3(40,70,30).normalize()}},
+const SKYD=(()=>{const m=new THREE.Mesh(new THREE.SphereGeometry(150,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,toneMapped:false,uniforms:{sd:{value:new THREE.Vector3(40,70,30).normalize()},tint:{value:new THREE.Color(0x4f8fd8)}},
  vertexShader:'varying vec3 vp;void main(){vp=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
- fragmentShader:'uniform vec3 sd;varying vec3 vp;float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}float fb(vec2 p){float a=.5,s=0.;for(int i=0;i<5;i++){s+=a*n(p);p*=2.03;a*=.5;}return s;}void main(){vec3 d=normalize(vp);float y=max(d.y,0.);vec3 c=mix(vec3(.83,.89,.95),vec3(.16,.38,.78),pow(y,.45));vec2 uv=d.xz/(d.y+.28)*1.1;float cl=fb(uv*1.6+vec2(4.,2.));cl=smoothstep(.48,.82,cl)*smoothstep(.02,.22,d.y);float sh=fb(uv*1.6+vec2(4.,2.)+sd.xz*.15);vec3 cc=mix(vec3(1.),vec3(.68,.72,.8),clamp((cl-sh*.5)*1.4,0.,1.));c=mix(c,cc,cl*.88);float s=max(dot(d,sd),0.);c+=vec3(1.,.88,.62)*(pow(s,900.)*4.+pow(s,18.)*.28);c=mix(c,vec3(.78,.72,.62),smoothstep(0.,-.25,d.y));gl_FragColor=vec4(c,1.);}'}));
+ fragmentShader:'uniform vec3 sd;uniform vec3 tint;varying vec3 vp;float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}float fb(vec2 p){float a=.5,s=0.;for(int i=0;i<5;i++){s+=a*n(p);p*=2.03;a*=.5;}return s;}void main(){vec3 d=normalize(vp);float y=max(d.y,0.);vec3 c=mix(vec3(.83,.89,.95),tint/max(max(tint.r,tint.g),max(tint.b,.001))*.78,pow(y,.45));vec2 uv=d.xz/(d.y+.28)*1.1;float cl=fb(uv*1.6+vec2(4.,2.));cl=smoothstep(.48,.82,cl)*smoothstep(.02,.22,d.y);float sh=fb(uv*1.6+vec2(4.,2.)+sd.xz*.15);vec3 cc=mix(vec3(1.),vec3(.68,.72,.8),clamp((cl-sh*.5)*1.4,0.,1.));c=mix(c,cc,cl*.88);float s=max(dot(d,sd),0.);c+=vec3(1.,.88,.62)*(pow(s,900.)*4.+pow(s,18.)*.28);c=mix(c,vec3(.78,.72,.62),smoothstep(0.,-.25,d.y));gl_FragColor=vec4(c,1.);}'}));
  m.renderOrder=-10;m.frustumCulled=false;m.onBeforeRender=(r,sc_,cm)=>{m.position.copy(cm.position)};return m})();sc.add(SKYD);
 (function(){try{/* A small sky+ground cube, rendered once, used as scene.environment so
    metal and glass have something to reflect. Deliberately NOT PMREMGenerator:
@@ -807,7 +932,7 @@ const nd=d.clone().normalize(),sp=S.nsp?0:SPR(),hr=hn=='Head'?.17:.3;let hh=0;fo
 const hc=hh*2.5;if(hc<S.hc)continue;const k=S.sel=='Lowest HP'?b.hp:S.sel=='Nearest'?d.length():an;if(k<bd){bd=k;best=[b,hc,nd,sp,ok]}}
 if(!best)return;const [b,hc,nd,sp,ok]=best;last=t;if(!S.silent){yaw=Math.atan2(-nd.x,-nd.z);pitch=Math.asin(nd.y)}
 if(!fire(nd.clone().add(rv(sp)).normalize(),ok)){if(W_[S.weapon].r>=.02||++mnc%25==0)notify('Missed '+b.n,(ok?'spread':'resolver')+' · hit chance '+Math.round(hc)+'%','#ff4d5a');msgs.push(['Missed '+b.n+' (HC '+Math.round(hc)+'%, '+(ok?'spread':'resolver')+')',2]);if(S.resolver=='Brute-force')b.guess=-b.guess}return 1}
-addEventListener('keydown',e=>{keys[e.code]=1;HvhLua.key(e.code);if((phase=='buy'||S.mode=='Deathmatch')&&/^Digit[0-9]$/.test(e.code)){const n=ALL[(+e.code[5]+ALL.length-1)%ALL.length];if(money>=W_[n].$){money-=W_[n].$;S.weapon=n;kn=false;notify('Bought '+n,'$'+W_[n].$,'#8fe03a')}}if(e.code=='KeyB')bo=!bo;if(e.code=='KeyV'&&locked)S.tp=!S.tp;if(e.code=='KeyR'&&locked&&!kn){anim('reload')}if(e.code=='KeyF'&&locked){anim('inspect')}if(e.code=='KeyQ'&&locked){kn=!kn;notify(kn?'Knife out':'Weapon out',kn?'Q to switch back':S.weapon,'#9aa0a6')}if(e.code=='Insert'||e.code=='ShiftRight'){const m=document.getElementById('m');const o=m.style.display=='block';m.style.display=o?'none':'block';if(!o)document.exitPointerLock()}if(e.code=='Space')e.preventDefault()});
+addEventListener('keydown',e=>{keys[e.code]=1;HvhLua.key(e.code);if((phase=='buy'||S.mode=='Deathmatch')&&/^Digit[0-9]$/.test(e.code)){const n=ALL[(+e.code[5]+ALL.length-1)%ALL.length];if(money>=W_[n].$){money-=W_[n].$;S.weapon=n;kn=false;notify('Bought '+n,'$'+W_[n].$,'#8fe03a')}}if(e.code=='KeyB')bo=!bo;if(e.code=='KeyV'&&locked)S.tp=!S.tp;if(e.code=='KeyR'&&locked&&!kn){anim('reload')}if(e.code=='KeyF'&&locked){anim('inspect')}if(e.code=='KeyQ'&&locked){kn=!kn;notify(kn?'Knife out':'Weapon out',kn?'Q to switch back':S.weapon,'#9aa0a6')}if(e.code=='Insert'||e.code=='ShiftRight'){const m=document.getElementById('m');const o=m.style.display=='block';m.style.display=o?'none':'block';m.classList.toggle('vis',!o);if(!o)document.exitPointerLock()}if(e.code=='Space')e.preventDefault()});
 addEventListener('keyup',e=>keys[e.code]=0);
 addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0022;pitch=Math.max(-1.5,Math.min(1.5,pitch-e.movementY*.0022))});
 addEventListener('mousedown',e=>{if(locked){down=1;if(!S.rage||!S.autofire){}}});addEventListener('mouseup',()=>down=0);
@@ -913,19 +1038,24 @@ const sb=.02*(1.5-Math.min(1,S.botacc/100*D.acc))*(slow?1:1.8),er=Math.abs(lg+(M
 const hitOK=!bt&&!S.dump&&er<.23,dec=bt||(!hitOK&&S.fl&&Math.abs(lg)>.2),ap=dec?(bt?new V(P.x+Math.cos(yaw)*FK*dsd(),pe.y,P.z-Math.sin(yaw)*FK*dsd()):new V(P.x+ppx*lg,pe.y,P.z+ppz*lg)):(S.dump?(()=>{const sd=(Math.random()<.5?-1:1)*(.7+Math.random()*1.5);return pe.clone().add(new V(ppx*sd,(Math.random()-.5)*1.2,ppz*sd))})():pe.clone().add(new V((Math.random()-.5)*3,(Math.random()-.5)*1.5,(Math.random()-.5)*3))),wn_=b.g.userData.wn;if(S.trace)beam(new V(b.x,1.4,b.z),hitOK?pe:ap,dec?'#c77dff':'#ff6a6a',.3);if(dec||S.dump)b.dump=(b.dump||0)+1;b.am=(b.am==null?(MAG[wn_]||30):b.am)-1;if(b.am<=0){b.rl=2.2;b.am=null;if((b.dump||0)>=(MAG[wn_]||30)*.4)notify(b.n+' emptied its mag','into your fake anti-aim','#c77dff');b.dump=0}if(hitOK){if(!(P.inv>0)){P.hp-=100;hurt=.5;LASTHIT=b;const _st=b.st||(b.st={k:0,d:0,dmg:0,hs:0});_st.dmg+=100}}else if(bt){if(Math.random()<.35)notify(b.n+' shot your fake','AA quality '+Math.round(aaQ()*100)+'%','#c77dff')}else if(!dec&&!S.dump)notify(b.n+' missed you','spread · '+Math.round(pd)+'m','#4fa3ff')}}
 // aa model
 let ay=yaw;if(S.aa){ay+=dsd()*S.desync/57.3+(S.aamode=='Spin'?ts*12:S.aamode=='Jitter'?(Math.floor(ts*8)%2?1:-1)*S.aarange/57.3:Math.PI)}
-pm.visible=S.tp;pm.position.set(P.x,P.y,P.z);pm.scale.y=1-.3*(P.cr||0);pm.rotation.y=ay;pm.rotation.x=0;if(pm.userData.hg)pm.userData.hg.rotation.x=S.aa?(S.ptc=='Down'?-.85:S.ptc=='Up'?.85:0):0;pm.userData.legs.forEach((l,i)=>l.rotation.x=Math.sin(ts*9+i*3.14)*Math.min(1,Math.hypot(P.vx,P.vz)/4)*.6);pg2.visible=S.tp&&S.aa&&S.aach;{const fkS=S.aa?dsd():1;pg2.position.set(P.x+Math.cos(yaw)*FK*fkS,P.y,P.z-Math.sin(yaw)*FK*fkS);pg2.rotation.y=ay+Math.PI}pg2.scale.y=pm.scale.y;gm.visible=S.tp&&S.fl;gm.position.set(lag.x,P.y,lag.z);gm.rotation.y=ay;lbls.forEach(l=>l.visible=S.lbl);const nc=S.night?0x0a0e1a:0xbcd6ee;sc.background=S.night?NC:SKY;sc.fog.color.set(nc);sc.fog.near=S.nofog?1e4:60;sc.fog.far=S.nofog?1e5:170;if(S.twalls!==lastTW){lastTW=S.twalls;walls.forEach(w=>{w.material.transparent=S.twalls>0;w.material.opacity=1-S.twalls/125;w.material.needsUpdate=true})}sun.intensity=S.night?.15:.8;hem.intensity=S.night?.3:.62;
+pm.visible=S.tp;pm.position.set(P.x,P.y,P.z);pm.scale.y=1-.3*(P.cr||0);pm.rotation.y=ay;pm.rotation.x=0;if(pm.userData.hg)pm.userData.hg.rotation.x=S.aa?(S.ptc=='Down'?-.85:S.ptc=='Up'?.85:0):0;pm.userData.legs.forEach((l,i)=>l.rotation.x=Math.sin(ts*9+i*3.14)*Math.min(1,Math.hypot(P.vx,P.vz)/4)*.6);pg2.visible=S.tp&&S.aa&&S.aach;{const fkS=S.aa?dsd():1;pg2.position.set(P.x+Math.cos(yaw)*FK*fkS,P.y,P.z-Math.sin(yaw)*FK*fkS);pg2.rotation.y=ay+Math.PI}pg2.scale.y=pm.scale.y;gm.visible=S.tp&&S.fl;gm.position.set(lag.x,P.y,lag.z);gm.rotation.y=ay;lbls.forEach(l=>l.visible=S.lbl);const nc=S.night?0x0a0e1a:0xbcd6ee;sc.background=S.night?NC:SKY;sc.fog.color.set(nc);sc.fog.near=S.nofog?1e4:Math.max(10,S.fogd*.35);sc.fog.far=S.nofog?1e5:S.fogd;if(S.skyc!==_skyPrev){_skyPrev=S.skyc;try{SKYD.material.uniforms.tint.value.set(S.skyc)}catch(e){}}if(S.twalls!==lastTW){lastTW=S.twalls;walls.forEach(w=>{w.material.transparent=S.twalls>0;w.material.opacity=1-S.twalls/125;w.material.needsUpdate=true})}sun.intensity=S.night?.15:.8;hem.intensity=S.night?.3:.62;
 bm.depthTest=true;GLM.color.set(S.glowcol);bots.forEach(b=>{b.ol.forEach(o=>o.visible=S.glow);b.m.color.set(S.chams?S.chamcol:'#8a2b3b');b.m.depthTest=!S.chams;b.m.transparent=S.chams;b.m.opacity=S.chams?.85:1;if(b.cs!==S.chams){b.cs=S.chams;b.g.traverse(o=>{if(o.isMesh&&!o.userData.ol){if(!o.userData.o)o.userData.o=o.material;o.material=S.chams?b.m:o.userData.o;o.renderOrder=S.chams?9:0}})}b.g.userData.legs.forEach((l,i)=>l.rotation.x=Math.sin(ts*9+i*3.14+b.ph)*.5)});
 cam.fov=S.cfov;cam.updateProjectionMatrix();const e=eye(),v=vd();cam.rotation.set(pitch,yaw,0);
 let cp=e.clone();if(S.tp){cp.sub(v.clone().multiplyScalar(S.tpd));rc.set(e,v.clone().negate());rc.far=S.tpd;const hh=rc.intersectObjects(walls);if(hh.length)cp=e.clone().sub(v.clone().multiplyScalar(Math.max(.3,hh[0].distance-.2)))}cam.position.copy(cp);
 if(vmN!=(kn?'Knife':S.weapon)){if(vm)cam.remove(vm);sc.remove(pm,gm);const wk=kn?'Knife':S.weapon;pm=mkHuman(wk);gm=mkGhost();if(pg2)sc.remove(pg2);pg2=mkAAG(pm);sc.add(pm,gm,pg2);HvhLua.emit('weapon',{name:wk});vm=wk=='Knife'?mkKnife(1):mkGun(wk);vm.position.set(.22,-.2,-.35);cam.add(vm);vmN=wk;anim('draw')}
-HvhLua.emit('tick',dt);vm.visible=S.vm&&!S.tp&&!DEBUG_FLY;/* kick is the firing recoil of the viewmodel and both places that raise it
+HvhLua.emit('tick',dt);vm.visible=S.vm&&!S.tp&&!DEBUG_FLY;applyFX();
+if(S.grain)FXO.style.backgroundPosition=((ts*600|0)%64)+'px '+((ts*437|0)%64)+'px';
+/* kick is the firing recoil of the viewmodel and both places that raise it
    clamp to .07. Only the decay was unclamped, so a single frame with a
    negative dt grows it instead of shrinking it - and at kick~4.8 the weapon
    sits nearly five units BEHIND the camera and is simply not drawn, then
    creeps back over several seconds. That is the intermittent 'no gun on
    screen' bug. Clamping here makes the invariant structural rather than
    relying on every writer to respect it. */
-kick=Math.max(0,Math.min(.07,kick-dt*.5));vm.position.z=-.35+kick;slash=Math.max(0,slash-dt*3);vm.rotation.x=kn?-slash*1.4:kick*1.6;vm.position.y=-.2-(kn?slash*.08:0);if(ANI.t<ANI.d){ANI.t+=dt;const u=Math.min(1,ANI.t/ANI.d),bmp=Math.sin(Math.PI*u),e=u<.5?2*u*u:1-2*(1-u)*(1-u);if(ANI.k=='draw'){vm.position.y-=.35*(1-e);vm.rotation.x-=.9*(1-e)}else if(ANI.k=='reload'){vm.position.y-=.14*bmp;vm.rotation.x-=.4*bmp;vm.rotation.z=.55*bmp;vm.position.x=.22-.06*bmp;if(u>.3&&u<.36)vm.position.y-=.03}else if(ANI.k=='inspect'){vm.rotation.y=-.9*bmp+Math.sin(u*Math.PI*3)*.25*bmp;vm.rotation.z=.6*Math.sin(u*Math.PI*2)*bmp;vm.position.x=.22-.1*bmp;vm.position.y+=.04*bmp}}else{vm.rotation.z=0;vm.rotation.y=0;vm.position.x=.22}FX.forEach(f=>{f.l-=dt;const k=Math.max(0,f.l/f.l0);f.g.traverse(o=>{if(o.isMesh)o.material.opacity=k*.6});if(f.fall){f.g.rotation.x=-Math.min(1,(1-k)*5)*1.45}});for(let i=FX.length-1;i>=0;i--)if(FX[i].l<=0){sc.remove(FX[i].g);FX.splice(i,1)}updFx(dt);tr=tr.filter(l=>{l.material.opacity=Math.max(0,l.life/l.l0)*.9;if((l.life-=dt)<=0){sc.remove(l);return false}return true});
+kick=Math.max(0,Math.min(.07,kick-dt*.5));vm.position.z=-.35+kick;slash=Math.max(0,slash-dt*3);vm.rotation.x=kn?-slash*1.4:kick*1.6;vm.position.y=-.2-(kn?slash*.08:0);if(ANI.t<ANI.d){ANI.t+=dt;const u=Math.min(1,ANI.t/ANI.d),bmp=Math.sin(Math.PI*u),e=u<.5?2*u*u:1-2*(1-u)*(1-u);if(ANI.k=='draw'){vm.position.y-=.35*(1-e);vm.rotation.x-=.9*(1-e)}else if(ANI.k=='reload'){vm.position.y-=.14*bmp;vm.rotation.x-=.4*bmp;vm.rotation.z=.55*bmp;vm.position.x=.22-.06*bmp;if(u>.3&&u<.36)vm.position.y-=.03}else if(ANI.k=='inspect'){vm.rotation.y=-.9*bmp+Math.sin(u*Math.PI*3)*.25*bmp;vm.rotation.z=.6*Math.sin(u*Math.PI*2)*bmp;vm.position.x=.22-.1*bmp;vm.position.y+=.04*bmp}}else{vm.rotation.z=0;vm.rotation.y=0;vm.position.x=.22}
+/* player offsets ride on top of whatever the recoil and animation code just
+   produced, rather than replacing it */
+vm.position.x+=S.vmx/200;vm.position.y+=S.vmy/200;vm.position.z+=S.vmz/200;vm.rotation.z=S.vmroll/120;FX.forEach(f=>{f.l-=dt;const k=Math.max(0,f.l/f.l0);f.g.traverse(o=>{if(o.isMesh)o.material.opacity=k*.6});if(f.fall){f.g.rotation.x=-Math.min(1,(1-k)*5)*1.45}});for(let i=FX.length-1;i>=0;i--)if(FX[i].l<=0){sc.remove(FX[i].g);FX.splice(i,1)}updFx(dt);tr=tr.filter(l=>{l.material.opacity=Math.max(0,l.life/l.l0)*.9;if((l.life-=dt)<=0){sc.remove(l);return false}return true});
 if(window.__cam)window.__cam(cam,P,bots);trackSun();
 /* The launch screen clears on this rather than on a timer, so it never
    uncovers a world that has not finished building. */
