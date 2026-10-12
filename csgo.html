@@ -144,21 +144,21 @@ const fl=new THREE.Mesh(new THREE.PlaneGeometry(140,140),(()=>{const t=mkTex('#c
 var lastMode='Competitive',kn=false,slash=0,pg2=null,bo=true,shN=0,mnc=0,manipOn=false,mgc=false;const RBC={},GM={},NT=[],FX=[],MO=new THREE.Vector3(),GLM=new THREE.MeshBasicMaterial({color:0xff8a1f,side:THREE.BackSide}),AGM=new THREE.MeshBasicMaterial({color:0x39ff14,transparent:true,opacity:.72,depthTest:false}),V=THREE.Vector3,walls=[],boxes=[];
 function mkTex(base,kind){const N=256,c=document.createElement('canvas');c.width=c.height=N;const q=c.getContext('2d'),R=Math.random;q.fillStyle=base;q.fillRect(0,0,N,N);
  /* large soft blotches: breaks up visible tiling */
- for(let i=0;i<46;i++){const x=R()*N,y=R()*N,r=30+R()*70,g=q.createRadialGradient(x,y,0,x,y,r),d=R()<.5;g.addColorStop(0,d?'rgba(70,45,20,'+(.05+R()*.09)+')':'rgba(255,240,205,'+(.04+R()*.08)+')');g.addColorStop(1,'rgba(0,0,0,0)');q.fillStyle=g;q.fillRect(0,0,N,N)}
+ for(let i=0;i<46;i++){const x=R()*N,y=R()*N,r=30+R()*70,g=q.createRadialGradient(x,y,0,x,y,r),d=R()<.5;g.addColorStop(0,d?'rgba(128,106,74,'+(.035+R()*.05)+')':'rgba(255,248,224,'+(.04+R()*.07)+')');g.addColorStop(1,'rgba(0,0,0,0)');q.fillStyle=g;q.fillRect(0,0,N,N)}
  /* fine grain */
  for(let i=0;i<5200;i++){q.fillStyle='rgba('+(R()<.5?'0,0,0':'255,255,255')+','+R()*.11+')';const sz=R()<.85?1:2;q.fillRect(R()*N,R()*N,sz,sz)}
  if(kind=='sand'){
   for(let i=0;i<10;i++){const y0=R()*N,a=3+R()*5,f=.02+R()*.04,ph=R()*6;q.strokeStyle='rgba(80,55,25,'+(.05+R()*.06)+')';q.lineWidth=1.5;q.beginPath();for(let x=0;x<=N;x+=4)q.lineTo(x,y0+Math.sin(x*f+ph)*a);q.stroke();q.strokeStyle='rgba(255,235,190,'+(.04+R()*.05)+')';q.beginPath();for(let x=0;x<=N;x+=4)q.lineTo(x,y0+2.5+Math.sin(x*f+ph)*a);q.stroke()}
   for(let i=0;i<260;i++){q.fillStyle='rgba('+(R()<.5?'110,85,50':'60,45,25')+','+(.12+R()*.2)+')';q.beginPath();q.arc(R()*N,R()*N,.6+R()*1.8,0,7);q.fill()}}
- else{const dg=q.createLinearGradient(0,N*.74,0,N);dg.addColorStop(0,'rgba(50,35,20,0)');dg.addColorStop(1,'rgba(50,35,20,.38)');q.fillStyle=dg;q.fillRect(0,N*.74,N,N*.26);
-  for(let i=0;i<9;i++){const x=R()*N,g=q.createLinearGradient(0,0,0,N);g.addColorStop(0,'rgba(60,40,20,0)');g.addColorStop(1,'rgba(60,40,20,'+(.05+R()*.1)+')');q.fillStyle=g;q.fillRect(x,0,3+R()*10,N)}}
+ else{const dg=q.createLinearGradient(0,N*.78,0,N);dg.addColorStop(0,'rgba(104,86,60,0)');dg.addColorStop(1,'rgba(104,86,60,.17)');q.fillStyle=dg;q.fillRect(0,N*.78,N,N*.22);
+  for(let i=0;i<9;i++){const x=R()*N,g=q.createLinearGradient(0,0,0,N);g.addColorStop(0,'rgba(116,96,66,0)');g.addColorStop(1,'rgba(116,96,66,'+(.03+R()*.05)+')');q.fillStyle=g;q.fillRect(x,0,3+R()*10,N)}}
  if(kind=='brick'){const rh=N/4,bw=N/2;
-  for(let y=0;y<N;y+=rh)for(let x=(y/rh%2)*-bw/2;x<N;x+=bw){const t=R();q.fillStyle='rgba('+(t<.5?'255,238,205':'70,48,26')+','+(.05+R()*.13)+')';q.fillRect(x+2,y+2,bw-4,rh-4);
-   q.fillStyle='rgba(0,0,0,.07)';q.fillRect(x+2,y+rh-9,bw-4,7);q.fillStyle='rgba(255,245,220,.10)';q.fillRect(x+2,y+2,bw-4,3);
-   for(let k=0;k<3;k++){q.fillStyle='rgba(40,28,16,'+(.1+R()*.18)+')';q.fillRect(x+R()*bw,y+R()*rh,1+R()*4,1+R()*3)}}
-  q.strokeStyle='rgba(55,36,16,.62)';q.lineWidth=3;for(let y=0;y<N;y+=rh){q.beginPath();q.moveTo(0,y);q.lineTo(N,y);q.stroke();for(let x=(y/rh%2)*bw/2;x<N;x+=bw){q.beginPath();q.moveTo(x,y);q.lineTo(x,y+rh);q.stroke()}}
-  q.strokeStyle='rgba(255,240,210,.16)';q.lineWidth=1;for(let y=0;y<N;y+=rh){q.beginPath();q.moveTo(0,y+3);q.lineTo(N,y+3);q.stroke()}
-  for(let i=0;i<2;i++){q.strokeStyle='rgba(35,24,12,.4)';q.lineWidth=1;q.beginPath();let cx=R()*N,cy=R()*N;q.moveTo(cx,cy);for(let k=0;k<7;k++){cx+=(R()-.5)*14;cy+=4+R()*8;q.lineTo(cx,cy)}q.stroke()}}
+  for(let y=0;y<N;y+=rh)for(let x=(y/rh%2)*-bw/2;x<N;x+=bw){const t=R();q.fillStyle='rgba('+(t<.55?'255,246,226':'126,104,74')+','+(.03+R()*.07)+')';q.fillRect(x+2,y+2,bw-4,rh-4);
+   q.fillStyle='rgba(90,72,48,.035)';q.fillRect(x+2,y+rh-9,bw-4,7);q.fillStyle='rgba(255,250,235,.10)';q.fillRect(x+2,y+2,bw-4,3);
+   for(let k=0;k<3;k++){q.fillStyle='rgba(118,98,68,'+(.05+R()*.08)+')';q.fillRect(x+R()*bw,y+R()*rh,1+R()*4,1+R()*3)}}
+  q.strokeStyle='rgba(138,118,86,.34)';q.lineWidth=2;for(let y=0;y<N;y+=rh){q.beginPath();q.moveTo(0,y);q.lineTo(N,y);q.stroke();for(let x=(y/rh%2)*bw/2;x<N;x+=bw){q.beginPath();q.moveTo(x,y);q.lineTo(x,y+rh);q.stroke()}}
+  q.strokeStyle='rgba(255,250,236,.20)';q.lineWidth=1;for(let y=0;y<N;y+=rh){q.beginPath();q.moveTo(0,y+2.5);q.lineTo(N,y+2.5);q.stroke()}
+  for(let i=0;i<2;i++){q.strokeStyle='rgba(120,100,72,.22)';q.lineWidth=1;q.beginPath();let cx=R()*N,cy=R()*N;q.moveTo(cx,cy);for(let k=0;k<7;k++){cx+=(R()-.5)*14;cy+=4+R()*8;q.lineTo(cx,cy)}q.stroke()}}
  if(kind=='wood'){const ph=N/6;for(let y=0;y<N;y+=ph){q.fillStyle='rgba(0,0,0,'+(R()*.1)+')';q.fillRect(0,y,N,ph);for(let k=0;k<7;k++){q.strokeStyle='rgba(50,30,10,'+(.12+R()*.2)+')';q.lineWidth=1;q.beginPath();let yy=y+R()*ph;q.moveTo(0,yy);for(let x=0;x<=N;x+=16)q.lineTo(x,yy+(R()-.5)*2.5);q.stroke()}q.strokeStyle='rgba(30,18,6,.8)';q.lineWidth=2.5;q.beginPath();q.moveTo(0,y);q.lineTo(N,y);q.stroke()}
   q.fillStyle='#4a4a46';q.fillRect(0,0,N,18);q.fillRect(0,N-18,N,18);q.fillRect(0,0,18,N);q.fillRect(N-18,0,18,N);q.fillStyle='rgba(255,255,255,.12)';q.fillRect(0,0,N,3);q.fillRect(0,0,3,N);q.strokeStyle='#4a4a46';q.lineWidth=13;q.beginPath();q.moveTo(18,18);q.lineTo(N-18,N-18);q.stroke();
   q.fillStyle='#232321';[[9,9],[N-9,9],[9,N-9],[N-9,N-9],[N/2,N/2]].forEach(a=>{q.beginPath();q.arc(a[0],a[1],3,0,7);q.fill()})}
@@ -197,7 +197,140 @@ const MG=(()=>{const cols=Math.ceil((MBX1-MBX0)/MCELL),rows=Math.ceil((MBY1-MBY0
 function mrects(fn){const R=MG.length,C=MG[0].length,out=[];let act={};for(let r=0;r<R;r++){const cur={};let c=0;while(c<C){const k=fn(r,c);let e=c+1;if(k===null){c=e;continue}while(e<C&&fn(r,e)===k)e++;const key=c+','+e+','+k;if(act[key]){cur[key]=act[key];act[key].r1=r+1}else{cur[key]={c0:c,c1:e,k,r0:r,r1:r+1};out.push(cur[key])}c=e}act=cur}return out}
 const SMt=[0xdcd4bf,0xd2c8ae].map(c=>{const t=mkTex('#'+c.toString(16),'brick');return new THREE.MeshStandardMaterial({map:t,normalMap:normalFrom(t,1.7),normalScale:new THREE.Vector2(1,1),roughness:.92,metalness:0})}),ROOF=new THREE.MeshLambertMaterial({color:0xb5532f});
 {const gf=new THREE.Mesh(new THREE.PlaneGeometry(260,260),(()=>{const t=mkTex('#c9c0a6','sand');t.repeat.set(50,50);const n=normalFrom(t,2.0);n.repeat.set(50,50);return new THREE.MeshStandardMaterial({map:t,normalMap:n,normalScale:new THREE.Vector2(.7,.7),roughness:.96,metalness:0})})());gf.rotation.x=-Math.PI/2;gf.position.y=.02;gf.receiveShadow=true;sc.add(gf)}
-mrects((r,c)=>MG[r][c]===null?((r>>3)*5+(c>>3)*11)%3:null).forEach((q,i)=>{const x0=MXf(MBX0+q.c0*MCELL),x1=MXf(MBX0+q.c1*MCELL),z0=MZf(MBY0+q.r0*MCELL),z1=MZf(MBY0+q.r1*MCELL),w=x1-x0,d=z1-z0,h=7+q.k*1.1,m=new THREE.Mesh(bgeo(w,h,d),SMt[i%2]);m.position.set((x0+x1)/2,h/2,(z0+z1)/2);m.castShadow=m.receiveShadow=true;sc.add(m);walls.push(m);boxes.push([x0,z0,x1,z1]);if(i%7==0&&w>5&&d>5){const rf=new THREE.Mesh(new THREE.BoxGeometry(w*.96,.5,d*.96),ROOF);rf.position.set((x0+x1)/2,h+.25,(z0+z1)/2);sc.add(rf)}});
+/* ===================== FACADE DRESSING =====================
+   The layout, collisions and navigation below are untouched: every building is
+   still the same extruded block with the same entry in `boxes` and `walls`.
+   Everything added here is decoration only - it is never pushed to `boxes`
+   (movement) or `walls` (bullets), so it cannot block a doorway, break a
+   sightline or swallow a shot. That is what lets a graybox read as architecture
+   without changing how the map plays. */
+const DECO=[];                                   /* collected, then instanced */
+function decoPush(kind,x,y,z,sx,sy,sz,ry){DECO.push({kind,x,y,z,sx,sy,sz,ry:ry||0})}
+
+const SAND_LIGHT=0xe4ddc8,SAND_MID=0xd3c8ad,SAND_WARM=0xcdbd9c,TRIM=0xbcae8e;
+function facadeMat(hex,rough){const k='fm'+hex;if(TX[k])return TX[k];
+ const t=mkTex('#'+hex.toString(16).padStart(6,'0'),'brick');
+ return TX[k]=new THREE.MeshStandardMaterial({map:t,normalMap:normalFrom(t,1.5),
+   normalScale:new THREE.Vector2(.85,.85),roughness:rough==null?.9:rough,metalness:0});}
+
+mrects((r,c)=>MG[r][c]===null?((r>>3)*5+(c>>3)*11)%3:null).forEach((q,i)=>{
+ const x0=MXf(MBX0+q.c0*MCELL),x1=MXf(MBX0+q.c1*MCELL),z0=MZf(MBY0+q.r0*MCELL),z1=MZf(MBY0+q.r1*MCELL),
+       w=x1-x0,d=z1-z0,h=7+q.k*1.1,cx=(x0+x1)/2,cz=(z0+z1)/2;
+ /* deterministic per-building variation, so the map looks authored not random */
+ let sd=(q.c0*73856093^q.r0*19349663^i*83492791)>>>0;
+ const rnd2=()=>((sd=(sd*1664525+1013904223)>>>0)/4294967296);
+ const pal=[SAND_LIGHT,SAND_MID,SAND_WARM,0xdad2ba,0xc9bb9a][Math.floor(rnd2()*5)];
+
+ const m=new THREE.Mesh(bgeo(w,h,d),facadeMat(pal));
+ m.position.set(cx,h/2,cz);m.castShadow=m.receiveShadow=true;sc.add(m);
+ walls.push(m);boxes.push([x0,z0,x1,z1]);          /* unchanged gameplay volume */
+
+ /* --- cornice: a lip at the roofline. Single cheapest cue that a block is a building. --- */
+ decoPush('cornice',cx,h-0.26,cz,w+0.55,0.52,d+0.55,0);
+ decoPush('parapet',cx,h+0.42,cz,w*0.995,0.62,d*0.995,0);
+ /* --- plinth: a darker base course where the wall meets the ground --- */
+ decoPush('plinth',cx,0.32,cz,w+0.3,0.64,d+0.3,0);
+
+ /* --- windows across each long face --- */
+ const faces=[[0,-1,w,z0],[0,1,w,z1],[-1,0,d,x0],[1,0,d,x1]];
+ faces.forEach(([nx,nz,span,at],fi)=>{
+  if(span<4.5)return;
+  const rows=h>9?2:1, cols=Math.max(1,Math.min(6,Math.floor(span/3.2)));
+  if(rnd2()<0.18)return;                          /* some faces stay blank */
+  for(let rI=0;rI<rows;rI++)for(let cI=0;cI<cols;cI++){
+   if(rnd2()<0.22)continue;                       /* irregular, not a grid stamp */
+   const t=(cI+0.5)/cols-0.5, along=t*span*0.86;
+   const wy=2.9+rI*3.1; if(wy+1.1>h-0.9)continue;
+   const px=nx?at+nx*0.05:cx+along, pz=nz?at+nz*0.05:cz+along;
+   const ry=nx?Math.PI/2:0;
+   /* slide a point along the face, whichever world axis that happens to be */
+   const off=t=>nx?{x:px,z:pz+t}:{x:px+t,z:pz};
+   /* the dark pane, then a frame built as four bars around it. A filled box for
+      the frame would simply cover the pane, which is exactly what it did first. */
+   decoPush('winrec',px,wy,pz,1.26,1.70,0.07,ry);
+   const l=off(-0.70),r2=off(0.70),ctr=off(0);
+   decoPush('winfrm',l.x,wy,l.z,0.14,1.98,0.13,ry);
+   decoPush('winfrm',r2.x,wy,r2.z,0.14,1.98,0.13,ry);
+   decoPush('winfrm',ctr.x,wy+0.92,ctr.z,1.54,0.15,0.13,ry);
+   decoPush('winsil',ctr.x,wy-0.95,ctr.z,1.70,0.17,0.32,ry);
+   /* a few get an awning - Mirage's most recognisable bit of colour */
+   if(rI===0&&rnd2()<0.28){const a2=nx?{x:px+nx*0.4,z:pz}:{x:px,z:pz+nz*0.4};
+     decoPush('awning',a2.x,wy+1.16,a2.z,1.66,0.09,0.86,ry);}
+  }
+ });
+
+ /* --- balcony on the occasional tall face --- */
+ if(h>9&&w>6&&rnd2()<0.45){
+  const side=rnd2()<0.5?-1:1, pz=side<0?z0-0.5:z1+0.5;
+  decoPush('balcony',cx,3.05,pz,Math.min(w*0.5,4.2),0.22,1.05,0);
+  decoPush('balrail',cx,3.62,pz+side*0.45,Math.min(w*0.5,4.2),0.95,0.1,0);
+ }
+
+ /* --- a recessed arch at street level. The wall behind stays solid, so this
+        changes how the block reads without changing how it plays. --- */
+ faces.forEach(([nx,nz,span,at])=>{
+  if(span<6||rnd2()<0.55)return;
+  const along=(rnd2()-0.5)*span*0.5;
+  const px=nx?at+nx*0.07:cx+along, pz=nz?at+nz*0.07:cz+along, ry=nx?Math.PI/2:0;
+  decoPush('arch',px,1.45,pz,2.0,2.9,0.12,ry);
+  decoPush('archtrim',px,2.98,pz,2.34,0.22,0.2,ry);
+ });
+
+ /* --- things that stand against the wall, never in the walking line --- */
+ faces.forEach(([nx,nz,span,at])=>{
+  if(span<5||rnd2()<0.5)return;
+  const n=1+Math.floor(rnd2()*2);
+  for(let k=0;k<n;k++){
+   const along=(rnd2()-0.5)*span*0.7;
+   const px=nx?at+nx*0.45:cx+along, pz=nz?at+nz*0.45:cz+along;
+   const roll=rnd2();
+   if(roll<0.4) decoPush('barrel',px,0.55,pz,0.62,1.1,0.62,0);
+   else if(roll<0.72) decoPush('crate',px,0.42,pz,0.9,0.84,0.9,rnd2()*0.6);
+   else decoPush('planter',px,0.34,pz,0.78,0.68,0.78,0);
+  }
+ });
+
+ /* --- roof: slab plus the odd rooftop box, so skylines are not flat --- */
+ if(w>5&&d>5){
+  const rf=new THREE.Mesh(new THREE.BoxGeometry(w*.96,.5,d*.96),ROOF);
+  rf.position.set(cx,h+.25,cz);rf.castShadow=rf.receiveShadow=true;sc.add(rf);
+  if(rnd2()<0.5) decoPush('roofbox',cx+(rnd2()-.5)*w*.4,h+1.2,cz+(rnd2()-.5)*d*.4,1.6,1.4,1.6,0);
+ }
+});
+
+/* --- build the decoration as a handful of instanced meshes --- */
+(function buildDeco(){
+ const UNIT=new THREE.BoxGeometry(1,1,1);
+ const M={
+  cornice:new THREE.MeshStandardMaterial({color:0xccc0a4,roughness:.88}),
+  parapet:new THREE.MeshStandardMaterial({color:0xd8cfb6,roughness:.9}),
+  plinth:new THREE.MeshStandardMaterial({color:0xa89877,roughness:.93}),
+  winrec:new THREE.MeshStandardMaterial({color:0x14171c,roughness:.35,metalness:.25}),
+  winfrm:new THREE.MeshStandardMaterial({color:0xcfc6b0,roughness:.84}),
+  winsil:new THREE.MeshStandardMaterial({color:0xded5bd,roughness:.85}),
+  awning:new THREE.MeshStandardMaterial({color:0xc2622c,roughness:.75}),
+  balcony:new THREE.MeshStandardMaterial({color:0xd2c8ac,roughness:.88}),
+  balrail:new THREE.MeshStandardMaterial({color:0x4a4038,roughness:.6,metalness:.35}),
+  roofbox:new THREE.MeshStandardMaterial({color:0xc6bba0,roughness:.9}),
+  arch:new THREE.MeshStandardMaterial({color:0x2a2622,roughness:.78}),
+  archtrim:new THREE.MeshStandardMaterial({color:0xd6ccb2,roughness:.86}),
+  barrel:new THREE.MeshStandardMaterial({color:0x6d6f63,roughness:.55,metalness:.42}),
+  crate:new THREE.MeshStandardMaterial({color:0x8a6a3e,roughness:.82}),
+  planter:new THREE.MeshStandardMaterial({color:0xb4714a,roughness:.88})
+ };
+ const byKind={};
+ DECO.forEach(o=>{(byKind[o.kind]=byKind[o.kind]||[]).push(o)});
+ const dm=new THREE.Object3D();
+ for(const kind in byKind){
+  const list=byKind[kind],im=new THREE.InstancedMesh(UNIT,M[kind],list.length);
+  im.castShadow=kind!=='winrec';im.receiveShadow=true;im.frustumCulled=false;
+  im.raycast=()=>{};                              /* never intercepts a bullet */
+  list.forEach((o,n)=>{dm.position.set(o.x,o.y,o.z);dm.rotation.set(0,o.ry,0);
+    dm.scale.set(o.sx,o.sy,o.sz);dm.updateMatrix();im.setMatrixAt(n,dm.matrix)});
+  im.instanceMatrix.needsUpdate=true;sc.add(im);
+ }
+ window.__decoCount=DECO.length;
+})();
 [[975,1420,1.6],[1005,1408,1.6],[1090,1418,1.8],[1118,1408,1.4],[1112,1495,1.6],[405,492,2.2],[490,492,2.2],[472,578,2.2],[1300,880,1.5],[1330,845,1.5],[880,1495,1.4],[1230,1250,1.4],[1060,1215,1.2]].forEach(([a,b,sz])=>bx(MXf(a),MZf(b),sz,sz,sz,0x8a5a2e));
 function mcell(x,z){return[Math.floor((z/MPX+MCY-MBY0)/MCELL),Math.floor((x/MPX+MCX-MBX0)/MCELL)]}
 const FCh={};let FCn=0;
