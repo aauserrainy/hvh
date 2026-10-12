@@ -130,7 +130,15 @@ const SKYD=(()=>{const m=new THREE.Mesh(new THREE.SphereGeometry(150,32,16),new 
  vertexShader:'varying vec3 vp;void main(){vp=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
  fragmentShader:'uniform vec3 sd;varying vec3 vp;float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}float fb(vec2 p){float a=.5,s=0.;for(int i=0;i<5;i++){s+=a*n(p);p*=2.03;a*=.5;}return s;}void main(){vec3 d=normalize(vp);float y=max(d.y,0.);vec3 c=mix(vec3(.83,.89,.95),vec3(.16,.38,.78),pow(y,.45));vec2 uv=d.xz/(d.y+.28)*1.1;float cl=fb(uv*1.6+vec2(4.,2.));cl=smoothstep(.48,.82,cl)*smoothstep(.02,.22,d.y);float sh=fb(uv*1.6+vec2(4.,2.)+sd.xz*.15);vec3 cc=mix(vec3(1.),vec3(.68,.72,.8),clamp((cl-sh*.5)*1.4,0.,1.));c=mix(c,cc,cl*.88);float s=max(dot(d,sd),0.);c+=vec3(1.,.88,.62)*(pow(s,900.)*4.+pow(s,18.)*.28);c=mix(c,vec3(.78,.72,.62),smoothstep(0.,-.25,d.y));gl_FragColor=vec4(c,1.);}'}));
  m.renderOrder=-10;m.frustumCulled=false;m.onBeforeRender=(r,sc_,cm)=>{m.position.copy(cm.position)};return m})();sc.add(SKYD);
-(function(){try{const es=new THREE.Scene(),m=new THREE.Mesh(new THREE.SphereGeometry(50,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,vertexShader:'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec3 p;void main(){vec3 d=normalize(p);float h=d.y;vec3 sky=mix(vec3(.72,.82,.95),vec3(.28,.5,.9),pow(max(h,0.),.6));vec3 gr=mix(vec3(.55,.5,.42),vec3(.25,.22,.18),pow(max(-h,0.),.5));vec3 c=h>0.?sky:gr;float sun=pow(max(dot(d,normalize(vec3(.5,.7,.35))),0.),180.);c+=vec3(1.,.92,.75)*sun*6.;gl_FragColor=vec4(c,1.);}'}));es.add(m);const rt=new THREE.WebGLCubeRenderTarget(32,{format:THREE.RGBFormat,generateMipmaps:false,minFilter:THREE.LinearFilter}),cc=new THREE.CubeCamera(.1,100,rt);es.add(cc);cc.update(ren,es);sc.environment=rt.texture}catch(e){console.warn('env',e)}})();
+(function(){try{/* A small sky+ground cube, rendered once, used as scene.environment so
+   metal and glass have something to reflect. Deliberately NOT PMREMGenerator:
+   its prefilter chain lives in a half-float target, and on any driver without
+   linear filtering of half-float textures every lit surface sampled black - the
+   whole map went dark. A plain cube renders correctly everywhere. */
+const es=new THREE.Scene(),m=new THREE.Mesh(new THREE.SphereGeometry(50,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,vertexShader:'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec3 p;void main(){vec3 d=normalize(p);float h=d.y;vec3 sky=mix(vec3(.72,.82,.95),vec3(.28,.5,.9),pow(max(h,0.),.6));vec3 gr=mix(vec3(.55,.5,.42),vec3(.25,.22,.18),pow(max(-h,0.),.5));vec3 c=h>0.?sky:gr;float sun=pow(max(dot(d,normalize(vec3(.5,.7,.35))),0.),180.);c+=vec3(1.,.92,.75)*sun*6.;gl_FragColor=vec4(c,1.);}'}));
+es.add(m);const rt=new THREE.WebGLCubeRenderTarget(128,{format:THREE.RGBFormat,generateMipmaps:true,minFilter:THREE.LinearMipmapLinearFilter,magFilter:THREE.LinearFilter}),cc=new THREE.CubeCamera(.1,100,rt);
+es.add(cc);cc.update(ren,es);sc.environment=rt.texture;m.geometry.dispose();m.material.dispose();
+}catch(e){console.warn('env',e)}})();
 
 const cam=new THREE.PerspectiveCamera(90,1,.05,200);cam.rotation.order='YXZ';sc.add(cam);
 const hem=new THREE.HemisphereLight(0xdce8ff,0x9c9484,.55);sc.add(hem);const sun=new THREE.DirectionalLight(0xfff6ea,.95);sun.position.set(40,70,30);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);const sh=sun.shadow.camera;sh.left=sh.bottom=-80;sh.right=sh.top=80;sh.far=220;sun.shadow.bias=-.0004;sun.shadow.normalBias=.025;ren.shadowMap.type=THREE.PCFSoftShadowMap;sc.add(sun);sc.add(sun.target);
@@ -305,16 +313,16 @@ mrects((r,c)=>MG[r][c]===null?((r>>3)*5+(c>>3)*11)%3:null).forEach((q,i)=>{
   cornice:new THREE.MeshStandardMaterial({color:0xccc0a4,roughness:.88}),
   parapet:new THREE.MeshStandardMaterial({color:0xd8cfb6,roughness:.9}),
   plinth:new THREE.MeshStandardMaterial({color:0xa89877,roughness:.93}),
-  winrec:new THREE.MeshStandardMaterial({color:0x14171c,roughness:.35,metalness:.25}),
+  winrec:new THREE.MeshStandardMaterial({color:0x1b2026,roughness:.12,metalness:.95,envMapIntensity:1.35}),
   winfrm:new THREE.MeshStandardMaterial({color:0xcfc6b0,roughness:.84}),
   winsil:new THREE.MeshStandardMaterial({color:0xded5bd,roughness:.85}),
   awning:new THREE.MeshStandardMaterial({color:0xc2622c,roughness:.75}),
   balcony:new THREE.MeshStandardMaterial({color:0xd2c8ac,roughness:.88}),
-  balrail:new THREE.MeshStandardMaterial({color:0x4a4038,roughness:.6,metalness:.35}),
+  balrail:new THREE.MeshStandardMaterial({color:0x4a4038,roughness:.55,metalness:.45,envMapIntensity:.9}),
   roofbox:new THREE.MeshStandardMaterial({color:0xc6bba0,roughness:.9}),
   arch:new THREE.MeshStandardMaterial({color:0x2a2622,roughness:.78}),
   archtrim:new THREE.MeshStandardMaterial({color:0xd6ccb2,roughness:.86}),
-  barrel:new THREE.MeshStandardMaterial({color:0x6d6f63,roughness:.55,metalness:.42}),
+  barrel:new THREE.MeshStandardMaterial({color:0x6d6f63,roughness:.5,metalness:.5,envMapIntensity:.9}),
   crate:new THREE.MeshStandardMaterial({color:0x8a6a3e,roughness:.82}),
   planter:new THREE.MeshStandardMaterial({color:0xb4714a,roughness:.88})
  };
