@@ -191,6 +191,60 @@ tr:last-child td{border-bottom:0}
  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
  animation:sheen 3.4s linear infinite}
 .btn,.icon-btn{transition:filter .15s,transform .08s,background .15s,border-color .15s}
+/* ---------- ambient backdrop ----------
+   One fixed layer behind everything: two slow colour drifts and a faint grid
+   that creeps. GPU-cheap - it animates background-position and opacity only,
+   never layout - and it sits behind a z-index 0 shell so nothing reflows. */
+#bgfx{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#bgfx:before,#bgfx:after{content:"";position:absolute;width:62vmax;height:62vmax;border-radius:50%;
+ filter:blur(90px);opacity:.2}
+#bgfx:before{background:radial-gradient(circle,#4d8df0,transparent 62%);left:-18vmax;top:-22vmax;
+ animation:drift1 34s ease-in-out infinite alternate}
+#bgfx:after{background:radial-gradient(circle,#a057e8,transparent 62%);right:-20vmax;bottom:-24vmax;
+ animation:drift2 42s ease-in-out infinite alternate}
+#bgfx i{position:absolute;inset:-2px;opacity:.5;
+ background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);
+ background-size:62px 62px;animation:creep 50s linear infinite;
+ -webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000 10%,transparent 72%);
+ mask-image:radial-gradient(ellipse at 50% 0%,#000 10%,transparent 72%)}
+@keyframes drift1{to{transform:translate3d(14vmax,10vmax,0) scale(1.12)}}
+@keyframes drift2{to{transform:translate3d(-12vmax,-8vmax,0) scale(1.08)}}
+@keyframes creep{to{background-position:62px 62px,62px 62px}}
+#menu,#auth,#shell{position:relative;z-index:1}
+
+/* ---------- launch screen ----------
+   The game is a separate document in an iframe and takes a moment to build its
+   world. Covering that with something deliberate reads far better than a frozen
+   menu, and it is removed on the game's own signal rather than a fixed timer,
+   so it never clears early on a slow machine. */
+#load{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;
+ justify-content:center;gap:22px;background:radial-gradient(ellipse at 50% 40%,#12161d,#07080a 70%)}
+#load.on{display:flex;animation:fadeIn .2s ease-out both}
+#load .lgo{font:700 30px/1 Verdana,sans-serif;letter-spacing:.02em;color:#eef2f7}
+#load .lgo span{color:var(--a)}
+#load .bar{width:min(62vw,340px);height:3px;background:#1c2029;overflow:hidden;border-radius:2px}
+#load .bar i{display:block;height:100%;width:38%;border-radius:2px;
+ background:linear-gradient(90deg,transparent,var(--a),#9fd0ff,var(--a),transparent);
+ animation:sweep 1.15s cubic-bezier(.5,0,.5,1) infinite}
+#load .tip{color:#6c7585;font:12px Verdana,sans-serif;letter-spacing:.04em;text-align:center;
+ max-width:min(86vw,420px);min-height:2.6em;animation:fadeIn .3s ease-out both}
+#load .ring{width:46px;height:46px;border-radius:50%;border:2px solid #1e242e;border-top-color:var(--a);
+ animation:spin .9s linear infinite}
+@keyframes sweep{from{transform:translateX(-120%)}to{transform:translateX(360%)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ---------- boost toggle ---------- */
+.boost{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;
+ border:1px solid var(--l);background:#14171c;color:var(--m);border-radius:999px;
+ padding:5px 11px;font:600 10.5px Verdana,sans-serif;letter-spacing:.09em;transition:.16s}
+.boost:hover{border-color:#3c4756;color:var(--t)}
+.boost .sw{width:26px;height:14px;border-radius:999px;background:#272b32;position:relative;transition:.18s}
+.boost .sw:after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;
+ background:#7b8392;transition:.18s}
+.boost.on{color:var(--y);border-color:#6b5420}
+.boost.on .sw{background:#6b5420}
+.boost.on .sw:after{left:14px;background:var(--y)}
 @media (prefers-reduced-motion:reduce){
   *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
@@ -221,7 +275,14 @@ tr:last-child td{border-bottom:0}
   </section>
 
   <!-- ============ MENU ============ -->
-  <section id="menu" class="hide">
+  <div id="bgfx" aria-hidden="true"><i></i></div>
+<div id="load" role="status" aria-live="polite">
+  <div class="ring"></div>
+  <div class="lgo">rainy<span>.hvh</span></div>
+  <div class="bar"><i></i></div>
+  <div class="tip" id="loadTip"></div>
+</div>
+<section id="menu" class="hide">
     <header>
       <div class="logo">rainy<span>.hvh</span></div>
       <div class="spacer"></div>
@@ -233,6 +294,7 @@ tr:last-child td{border-bottom:0}
       </div>
       <span class="tag on" id="onTag"><i class="dot"></i>Online</span>
       <span class="tag owner hide" id="ownTag">Owner</span>
+      <button class="boost" id="boostBtn" title="Lower the graphics to raise your frame rate" aria-pressed="false"><span class="sw"></span>BOOST FPS</button>
       <button class="btn ghost sm" id="outBtn">Log out</button>
     </header>
     <main><div class="inner">
@@ -491,14 +553,71 @@ function startMatch(m){
   clearInterval(LOBBY_POLL); LOBBY_POLL = null; LOBBY = null; closeModal();
   launch(false, m);
 }
+/* ---------- Boost FPS ----------
+   Lives in the menu because that is where someone goes when the game ran badly
+   last time. Persisted locally and handed to the game in the session config, so
+   it is already on for the first frame rather than being switched on after the
+   player has seen the stutter. */
+const BOOST_KEY = 'hvh_boost';
+let BOOST = false;
+try { BOOST = localStorage.getItem(BOOST_KEY) === '1'; } catch (e) {}
+function paintBoost(){
+  const b = $('boostBtn'); if (!b) return;
+  b.classList.toggle('on', BOOST);
+  b.setAttribute('aria-pressed', BOOST ? 'true' : 'false');
+}
+function initBoost(){
+  const b = $('boostBtn'); if (!b) return;
+  paintBoost();
+  b.onclick = () => {
+    BOOST = !BOOST;
+    try { localStorage.setItem(BOOST_KEY, BOOST ? '1' : '0'); } catch (e) {}
+    paintBoost();
+    note(BOOST ? 'Boost FPS on - shadows and effects off' : 'Boost FPS off - full graphics', BOOST ? 'ok' : 'info');
+  };
+}
+
+/* ---------- launch screen ----------
+   Cleared on the game's own signal, not a timer, so it never uncovers a world
+   that has not finished building. The timeout is a backstop for a game that
+   fails to report rather than the normal path. */
+const LOAD_TIPS = [
+  'Hold TAB in a match for the full scoreboard',
+  'Boost FPS is in the menu if your frame rate is low',
+  'Each client watches its opponent for impossible movement',
+  'Online matches lock manipulation, magic bullet and speed',
+  'Press V for third person, F8 if you are the owner'
+];
+let _tipTimer = null;
+function loadShow(){
+  const el = $('load'); if (!el) return;
+  let n = Math.floor(Math.random() * LOAD_TIPS.length);
+  const tip = $('loadTip');
+  const next = () => { if (tip) { tip.textContent = LOAD_TIPS[n % LOAD_TIPS.length]; n++;
+    tip.style.animation = 'none'; void tip.offsetWidth; tip.style.animation = ''; } };
+  next();
+  clearInterval(_tipTimer); _tipTimer = setInterval(next, 2600);
+  el.classList.add('on');
+}
+function loadHide(){
+  const el = $('load'); if (!el) return;
+  el.classList.remove('on');
+  clearInterval(_tipTimer); _tipTimer = null;
+}
+/* the game posts this once its first frame is on screen */
+addEventListener('message', e => { if (e && e.data === 'hvh:ready') loadHide(); });
+
 function launch(offline, m){
   const g = $('game');
   const cfg = offline
-    ? { offline: true }
+    ? { offline: true, boost: BOOST }
     : { offline: false, api: API.base, token: API.token, match: m.id, uid: ME.user.uid,
-        players: m.players, host: m.host === ME.user.uid };
+        players: m.players, host: m.host === ME.user.uid, boost: BOOST,
+        name: (ME.user && ME.user.username) || '' };
+  loadShow();
+  setTimeout(loadHide, 25000);          /* backstop only */
   sessionStorage.setItem('hvh_session_cfg', JSON.stringify(cfg));
-  g.src = 'csgo.html?v=46&mode=' + (offline ? 'offline' : 'online');
+  g.src = 'csgo.html?v=47&mode=' + (offline ? 'offline' : 'online');
   g.style.display = 'block';
   $('leave').style.display = 'block';
   const tag = $('modeTag');
@@ -702,6 +821,7 @@ function roundName(r, total){
 /* ---------------- boot ---------------- */
 (async function boot(){
   $('apiUrl').value = API.base;
+  initBoost();
   probe();
   setMode('login');
   const join = new URLSearchParams(location.search).get('join');

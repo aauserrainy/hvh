@@ -92,19 +92,142 @@ input[type=range]{box-shadow:inset 0 1px 2px #000}.g b{font-weight:700;letter-sp
 const SESSION = (()=>{try{return JSON.parse(sessionStorage.getItem('hvh_session_cfg')||'null')||{offline:true}}catch(e){return {offline:true}}})();
 const ONLINE_MATCH = !SESSION.offline;
 const RANKED = {maxSpeed:5, manip:false, magic:false, bots:false};
+/* ===================== TEAMS AND MATCH STATE =====================
+   Hoisted up here with the rest of the session rules: the HUD, the scoreboard
+   and the spawn code all read these, and several of them run at the top level
+   further down. Declared below their first use they would sit in a temporal
+   dead zone and take the whole script out on load. */
+const TEAM_ME=(SESSION.team==='T'||SESSION.team==='CT')?SESSION.team:'CT';
+const TEAM_OP=TEAM_ME==='T'?'CT':'T';
+const TNAME={T:'TERRORISTS',CT:'COUNTER-TERRORISTS'},TSHORT={T:'T',CT:'CT'};
+const TCOL={T:'#d8a13a',CT:'#5b9bd5'},TDIM={T:'#6b4f1c',CT:'#2b4a6b'};
+/* The owner (UID 1) may spectate as a commentator. Server-assigned; a client
+   that simply claims uid 1 gets nothing, because everything this unlocks is
+   local presentation - no weapon, no damage, no scoring. */
+const IS_OWNER=SESSION.uid===1;
+let DEBUG_FLY=false;
+/* Per-match statistics. Deliberately separate from the lifetime account stats
+   the backend keeps, and reset with the match. Assists are not tracked: the
+   match runs peer to peer, so there is no authority that sees who damaged whom
+   before a kill, and a made-up number is worse than an absent column. */
+const MS={k:0,d:0,dmg:0,hs:0};
+let LASTHIT=null;           /* who last damaged you, so a death credits a killer */
+function msReset(){MS.k=MS.d=MS.dmg=MS.hs=0}
+/* ===================== TAB SCOREBOARD, BLACKOUT, DEBUG FLY =====================
+   Built as DOM rather than painted into the HUD canvas: it stays crisp at any
+   resolution, reflows on a narrow screen, and costs nothing per frame while it
+   is hidden. pointer-events stay off throughout, so it cannot swallow a click
+   or disturb pointer lock - the match keeps running underneath, which is what
+   an online scoreboard has to do. */
+const SBOX=document.createElement('div');
+SBOX.style.cssText='position:fixed;inset:0;display:none;align-items:center;justify-content:center;'+
+ 'pointer-events:none;z-index:40;font-family:Verdana,sans-serif;background:rgba(6,8,12,.55)';
+const BLACK=document.createElement('div');
+BLACK.style.cssText='position:fixed;inset:0;display:none;pointer-events:none;z-index:45;background:#000;'+
+ 'color:#7d8694;font-family:Verdana,sans-serif;align-items:center;justify-content:center;flex-direction:column;gap:10px';
+const DBG=document.createElement('div');
+DBG.style.cssText='position:fixed;left:50%;top:58px;transform:translateX(-50%);display:none;pointer-events:none;'+
+ 'z-index:46;font:bold 11px Verdana;letter-spacing:.14em;color:#ffc04d;background:rgba(10,12,16,.72);padding:5px 14px';
+DBG.textContent='DEBUG SPECTATE  ·  WASD + SPACE/CTRL  ·  F8 TO EXIT';
+addEventListener('DOMContentLoaded',()=>{document.body.append(SBOX,BLACK,DBG)});
+if(document.body)document.body.append(SBOX,BLACK,DBG);
+
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+/* Everyone actually in the match, local player included. Bots are listed as
+   bots; nothing is invented to fill a row. */
+function roster(){
+ const rows=[];
+ rows.push({name:SESSION.name||'You',uid:SESSION.uid||0,team:TEAM_ME,me:true,
+            k:MS.k,d:MS.d,dmg:MS.dmg,hs:MS.hs,ping:(typeof NETPING!=='undefined'&&NETPING)||0,bot:false,dead:!!pDead||P.hp<=0});
+ bots.forEach(b=>{const st=b.st||(b.st={k:0,d:0,dmg:0,hs:0});
+  rows.push({name:b.n,uid:0,team:b.remote?TEAM_OP:TEAM_OP,me:false,
+             k:st.k,d:st.d,dmg:st.dmg,hs:st.hs,ping:b.remote?((typeof NETPING!=='undefined'&&NETPING)||0):0,
+             bot:!b.remote,dead:!!b.dead})});
+ (typeof mates!=='undefined'?mates:[]).forEach(m=>{const st=m.st||(m.st={k:0,d:0,dmg:0,hs:0});
+  rows.push({name:m.n,uid:0,team:TEAM_ME,me:false,k:st.k,d:st.d,dmg:st.dmg,hs:st.hs,ping:0,bot:true,dead:!!m.dead})});
+ return rows}
+/* kills first, then fewest deaths, then damage, then name - a total order, so
+   two players with identical lines never swap places between frames */
+function sortRows(a,b){return b.k-a.k || a.d-b.d || b.dmg-a.dmg || String(a.name).localeCompare(String(b.name))}
+function kd(k,d){return d===0?(k===0?'0.00':k.toFixed(2)):(k/d).toFixed(2)}
+
+function sbSide(team,rows,sc_){
+ const mine=score[0],theirs=score[1];
+ const pts = team===TEAM_ME?mine:theirs;
+ const list=rows.filter(r=>r.team===team).sort(sortRows);
+ const head='<div style="display:flex;align-items:baseline;gap:10px;padding:0 0 7px">'+
+  '<span style="font:bold '+(15*sc_)+'px Verdana;color:'+TCOL[team]+';letter-spacing:.1em">'+TNAME[team]+'</span>'+
+  '<span style="font:bold '+(19*sc_)+'px Verdana;color:#fff">'+pts+'</span>'+
+  '<span style="font:'+(10*sc_)+'px Verdana;color:#79818f;margin-left:auto">'+list.length+' player'+(list.length===1?'':'s')+'</span></div>';
+ const cols='<div style="display:grid;grid-template-columns:1.6fr 40px 28px 28px 42px 36px 30px 40px;gap:4px;'+
+  'font:bold '+(9*sc_)+'px Verdana;color:#6b7280;letter-spacing:.08em;padding:4px 6px;border-bottom:1px solid #222733">'+
+  '<span>PLAYER</span><span style="text-align:right">UID</span><span style="text-align:right">K</span><span style="text-align:right">D</span>'+
+  '<span style="text-align:right">K/D</span><span style="text-align:right">DMG</span><span style="text-align:right">HS</span><span style="text-align:right">PING</span></div>';
+ const body=list.map(r=>{
+  const bg=r.me?'background:rgba(255,255,255,.09);':'';
+  const fade=r.dead?'opacity:.45;':'';
+  return '<div style="display:grid;grid-template-columns:1.6fr 40px 28px 28px 42px 36px 30px 40px;gap:4px;'+
+   'font:'+(11*sc_)+'px Verdana;color:#dfe3ea;padding:4px 6px;'+bg+fade+'">'+
+   '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.name)+
+     (r.bot?'<span style="color:#6b7280"> BOT</span>':'')+'</span>'+
+   '<span style="text-align:right;color:#8c93a0">'+(r.uid?r.uid:'-')+'</span>'+
+   '<span style="text-align:right">'+r.k+'</span><span style="text-align:right">'+r.d+'</span>'+
+   '<span style="text-align:right;color:#aab1bd">'+kd(r.k,r.d)+'</span>'+
+   '<span style="text-align:right;color:#aab1bd">'+Math.round(r.dmg)+'</span>'+
+   '<span style="text-align:right;color:#aab1bd">'+r.hs+'</span>'+
+   /* a bot has no connection, so it gets a dash rather than a made-up 0ms */
+   '<span style="text-align:right;color:#8c93a0">'+(r.bot||!r.ping?'-':r.ping)+'</span></div>'}).join('');
+ return '<div style="flex:1;min-width:0;border-top:3px solid '+TCOL[team]+';background:rgba(12,15,20,.94);padding:10px 12px">'+head+cols+body+'</div>'}
+
+function sbRender(){
+ const sc_=Math.max(.8,Math.min(1.15,innerWidth/1280)), rows=roster();
+ const mine=score[0],theirs=score[1];
+ const sT=TEAM_ME==='T'?mine:theirs, sCT=TEAM_ME==='CT'?mine:theirs;
+ const lead = sT===sCT?'MATCH TIED':(sT>sCT?'TERRORISTS LEAD':'COUNTER-TERRORISTS LEAD');
+ SBOX.innerHTML='<div style="width:min(94vw,980px);max-height:88vh;overflow:hidden;display:flex;flex-direction:column;gap:8px">'+
+  '<div style="display:flex;align-items:baseline;gap:12px;color:#8c93a0;font:bold '+(10*sc_)+'px Verdana;letter-spacing:.14em">'+
+   '<span>'+(ONLINE_MATCH?'ONLINE MATCH':'OFFLINE PRACTICE')+'</span><span>ROUND '+rd+'</span>'+
+   '<span style="margin-left:auto;color:#dfe3ea">'+lead+'</span></div>'+
+  '<div style="display:flex;gap:8px;flex-wrap:wrap">'+sbSide('T',rows,sc_)+sbSide('CT',rows,sc_)+'</div>'+
+  '<div style="color:#5d646f;font:'+(9*sc_)+'px Verdana;letter-spacing:.06em">'+
+   'Current match only - lifetime account statistics are kept separately'+
+   (ONLINE_MATCH?'':' · offline practice is never recorded online')+'</div></div>'}
+
+let SB_ON=false;
+function sbShow(v){if(v===SB_ON)return;SB_ON=v;if(v)sbRender();SBOX.style.display=v?'flex':'none'}
+addEventListener('keydown',e=>{if(e.code==='Tab'){e.preventDefault();sbShow(true)}},{capture:true});
+addEventListener('keyup',  e=>{if(e.code==='Tab'){e.preventDefault();sbShow(false)}},{capture:true});
+/* Holding Tab through an alt-tab would otherwise leave it stuck open */
+addEventListener('blur',()=>sbShow(false));
+addEventListener('keydown',e=>{
+ if(e.code!=='F8')return;
+ if(!IS_OWNER){notify('Debug spectate','Owner only','#ffc04d');return}
+ e.preventDefault();DEBUG_FLY=!DEBUG_FLY;
+ DBG.style.display=DEBUG_FLY?'block':'none';
+ if(DEBUG_FLY)BLACK.style.display='none';
+ notify('Debug spectate',DEBUG_FLY?'On - no weapon, no collision':'Off','#ffc04d');
+});
+/* keep the numbers moving while the board is held open */
+setInterval(()=>{if(SB_ON)sbRender()},500);
+
 const canManip = () => !ONLINE_MATCH && S.manip;
 const canMagic = () => !ONLINE_MATCH && S.manip && S.magic;
 const moveSpeed = () => ONLINE_MATCH ? Math.min(S.speed, RANKED.maxSpeed) : S.speed;
 const RANKED_OFF=['manip','magic','mrange','dump','bres'],BOT_KEYS=['mode','v5','bvb','diff','botacc','bots','baa_on','baa_prof','baa_pitch','baa_head','baa_lean','baa_spd','bs_jig','bs_crouch','bs_rep'];
 function blocked(k){return ONLINE_MATCH&&(RANKED_OFF.includes(k)||BOT_KEYS.includes(k))}
+/* The one place that decides effective render quality. Boost FPS overrides the
+   quality dropdown rather than editing it, so turning Boost off restores
+   whatever the player had chosen. A function declaration, not a const arrow:
+   this is read from code that runs very early. */
+function GFX(){return S.boost?'Performance':S.gfx}
 let _bn=0;function bNote(k){const t=performance.now();if(t-_bn<1500)return;_bn=t;notify('Online match',BOT_KEYS.includes(k)?'Bot settings are offline only':'Disabled by the ranked ruleset','#ffc04d')}
-const S={baa_prof:'Mixed',bs_crouch:true,bs_jig:true,bs_rep:true,dbg_perf:false,dbg_hb:false,dbg_ins:false,baa_on:true,baa_pitch:'Jitter',baa_head:40,baa_lean:50,baa_spd:100,gfx:'Quality',vig:true,hs_on:true,hs_head:'Skeet',hs_body:'Tick',hs_master:80,hs_hvol:100,hs_bvol:70,v5:true,luaAbs:false,luaBloom:false,ab_cross:true,ab_cstyle:'Bloom ring',ab_csz:7,ab_cgap:5,ab_ccol:'#9fca2b',ab_dyn:true,ab_kb:true,ab_kbpos:'Right',ab_kbo:0,ab_aaq:true,ab_wm:true,bl_hit:true,bl_dmg:true,bl_vig:true,bl_col:'#ff6ad5',bl_int:60,prefbaim:true,dt:false,sel:'Crosshair',lg:false,lgfov:8,lgsm:6,lgrcs:true,snap:false,dist:false,radar:true,trace:true,snd:true,vm:true,slow:false,astr:true,ptc:'Down',theme:'Skeet',rage:true,silent:false,autofire:true,resolver:'Brute-force',arrow:true,nofog:false,twalls:0,autoscope:true,stop:true,fov:60,hitbox:'Head',mindmg:30,hc:70,weapon:'Glock-18',
+const S={baa_prof:'Mixed',bs_crouch:true,bs_jig:true,bs_rep:true,dbg_perf:false,dbg_hb:false,dbg_ins:false,baa_on:true,baa_pitch:'Jitter',baa_head:40,baa_lean:50,baa_spd:100,gfx:'Quality',boost:false,vig:true,hs_on:true,hs_head:'Skeet',hs_body:'Tick',hs_master:80,hs_hvol:100,hs_bvol:70,v5:true,luaAbs:false,luaBloom:false,ab_cross:true,ab_cstyle:'Bloom ring',ab_csz:7,ab_cgap:5,ab_ccol:'#9fca2b',ab_dyn:true,ab_kb:true,ab_kbpos:'Right',ab_kbo:0,ab_aaq:true,ab_wm:true,bl_hit:true,bl_dmg:true,bl_vig:true,bl_col:'#ff6ad5',bl_int:60,prefbaim:true,dt:false,sel:'Crosshair',lg:false,lgfov:8,lgsm:6,lgrcs:true,snap:false,dist:false,radar:true,trace:true,snd:true,vm:true,slow:false,astr:true,ptc:'Down',theme:'Skeet',rage:true,silent:false,autofire:true,resolver:'Brute-force',arrow:true,nofog:false,twalls:0,autoscope:true,stop:true,fov:60,hitbox:'Head',mindmg:30,hc:70,weapon:'Glock-18',
 aa:false,aamode:'Spin',aarange:58,
 esp:false,name:true,hp:false,skel:false,chams:false,chamcol:'#ff3b6b',fovc:false,hitm:true,tp:false,cfov:90,
 bhop:true,speed:6,wm:true,ind:true,botacc:45,bots:12,diff:'Hard',desync:58,dside:'Jitter',fl:false,fll:6,nsp:false,wpn:false,night:false,lbl:true,tpd:3,accent:'#3f84e8',bres:0,manip:true,mrange:20,magic:true,glow:true,glowcol:'#ff8a1f',aach:true,bvb:false,dump:false,tcol:'#7ad0ff',hitch:true,hcol:'#ffffff',deathch:true,dcol:'#ff3b6b',mode:'Competitive'};const DEF=JSON.stringify(S);
 const SPEC={Legit:[['Aim assist',[['c','lg','Enabled (rage off, hold LMB)'],['s','lgfov','FOV',1,30],['s','lgsm','Smoothing',1,20],['c','lgrcs','Recoil control']]]],Rage:[['Aimbot',[['c','rage','Ragebot Enabled'],['c','dt','Double tap'],['d','resolver','Resolver',['Off','Brute-force','Smart']],['c','nsp','Remove recoil'],['c','prefbaim','Prefer body aim if lethal'],['d','sel','Target selection',['Crosshair','Lowest HP','Nearest']],['c','silent','Silent aim'],['c','autofire','Automatic fire'],['c','stop','Quick stop'],['c','manip','Manipulation (hold K)'],['s','mrange','Manipulation range (dm)',5,40],['c','magic','Magic bullet (through walls)'],['s','fov','Ragebot FOV',1,180],['d','hitbox','Target hitbox',['Head','Chest','Stomach','Legs']],['s','mindmg','Minimum damage',1,100],['s','hc','Minimum hitchance',0,100],['c','autoscope','Automatic scope']]]],
 'Anti-aim':[['Angles',[['c','aa','Enabled'],['d','aamode','Yaw',['Spin','Jitter','Static 180']],['d','ptc','Pitch',['Down','Up','Zero']],['s','desync','Desync amount',0,58],['d','dside','Desync side',['Left','Right','Jitter']],['c','fl','Fake lag'],['c','dump','Dump (bots miss every shot)'],['s','bres','Bot resolve chance',0,100],['s','fll','Fake lag limit',1,14],['c','slow','Slow walk'],['s','aarange','Jitter / desync range',0,180]]]],
-Visuals:[['Players',[['c','esp','Bounding box'],['c','name','Name'],['c','hp','Health bar'],['c','skel','Skeleton'],['c','glow','Enemy glow outline'],['k','glowcol','Glow color'],['c','aach','Anti-aim chams (green)'],['c','chams','Chams (through walls)'],['k','chamcol','Chams color'],['c','snap','Snaplines'],['c','dist','Distance'],['c','radar','Radar']]],['Other',[['c','fovc','Draw FOV'],['c','trace','Bullet tracers'],['k','tcol','Tracer color'],['c','hitch','Hit chams'],['k','hcol','Hit chams color'],['c','deathch','Death chams'],['k','dcol','Death chams color'],['c','arrow','Out of FOV arrow'],['d','gfx','Graphics quality',['Performance','Balanced','Quality']],['c','vig','Vignette / color grade'],['c','nofog','Remove fog'],['s','twalls','Transparent walls',0,100],['c','hitm','Hitmarker'],['c','tp','Third person (V)'],['s','tpd','Third person distance',1,8],['c','lbl','Map callouts'],['c','night','Night mode'],['c','wpn','Weapon name'],['c','vm','Weapon viewmodel'],['c','trace','Bullet tracers'],['c','snd','Hit sound'],['s','cfov','Camera FOV',60,120]]]],
+Visuals:[['Players',[['c','esp','Bounding box'],['c','name','Name'],['c','hp','Health bar'],['c','skel','Skeleton'],['c','glow','Enemy glow outline'],['k','glowcol','Glow color'],['c','aach','Anti-aim chams (green)'],['c','chams','Chams (through walls)'],['k','chamcol','Chams color'],['c','snap','Snaplines'],['c','dist','Distance'],['c','radar','Radar']]],['Other',[['c','fovc','Draw FOV'],['c','trace','Bullet tracers'],['k','tcol','Tracer color'],['c','hitch','Hit chams'],['k','hcol','Hit chams color'],['c','deathch','Death chams'],['k','dcol','Death chams color'],['c','arrow','Out of FOV arrow'],['d','gfx','Graphics quality',['Performance','Balanced','Quality']],['c','boost','Boost FPS (lowers graphics)'],['c','vig','Vignette / color grade'],['c','nofog','Remove fog'],['s','twalls','Transparent walls',0,100],['c','hitm','Hitmarker'],['c','tp','Third person (V)'],['s','tpd','Third person distance',1,8],['c','lbl','Map callouts'],['c','night','Night mode'],['c','wpn','Weapon name'],['c','vm','Weapon viewmodel'],['c','trace','Bullet tracers'],['c','snd','Hit sound'],['s','cfov','Camera FOV',60,120]]]],
 Misc:[['Miscellaneous',[['c','bhop','Bunny hop'],['c','astr','Auto strafe'],['s','speed','Move speed',3,12]]],['Settings',[['c','wm','Watermark'],['c','ind','Indicators']]],['Hit sounds',[['c','hs_on','Enable hit sounds'],['d','hs_head','Headshot sound',HvhAudio.lists.csgo.head],['d','hs_body','Body hit sound',HvhAudio.lists.csgo.body],['s','hs_master','Master hit volume',0,100],['s','hs_hvol','Headshot volume',0,100],['s','hs_bvol','Body hit volume',0,100],['b','hs_th','Test headshot'],['b','hs_tb','Test body hit']]],['Presets',[['k','accent','Menu color'],['d','theme','Theme',['Skeet','Neverlose']],['b','cfg_exp','Export config (copy to clipboard)'],['b','cfg_imp','Import config (paste)'],['b','save','Save config'],['b','load','Load config'],['b','reset','Reset config']]],['Debug tools',[['c','dbg_perf','Performance + network overlay'],['c','dbg_hb','Show hitboxes'],['c','dbg_ins','Bot inspector + target path']]]],Bots:[['Bots',[['d','mode','Game mode',['Competitive','Deathmatch']],['c','v5','5v5 teams (Competitive)'],['c','bvb','Bots fight each other'],['d','diff','Difficulty',['Easy','Normal','Hard','Nightmare']],['s','botacc','Bot accuracy',0,100],['s','bots','Bot count',1,1000]]],['Bot anti-aim pose',[['c','baa_on','Visible anti-aim pose'],['d','baa_prof','Profile (per bot when Mixed)',['Mixed','Spin','Jitter','Static','Down','Crouch']],['d','baa_pitch','Pitch',['Down','Up','Jitter','Off']],['s','baa_head','Head yaw jitter',0,90],['s','baa_lean','Torso twist %',0,100],['s','baa_spd','Speed %',25,300]]],['Smart bots',[['c','bs_jig','Jiggle peek'],['c','bs_crouch','Crouch peek'],['c','bs_rep','Reposition after holding angle']]]],Lua:[['Lua scripting',[['b','lua_open','Open Lua script manager']]],['Built-in overlays',[['c','luaAbs','absence.space  (inject)'],['c','luaBloom','bloom.tool  (inject)']]],['absence.space',[['c','ab_cross','Custom crosshair'],['d','ab_cstyle','Crosshair style',['Dot','Cross','Circle','Bloom ring']],['s','ab_csz','Crosshair size',2,24],['s','ab_cgap','Crosshair gap',0,20],['k','ab_ccol','Accent / crosshair color'],['c','ab_dyn','Dynamic gap (movement)'],['c','ab_kb','Keybind list'],['d','ab_kbpos','Keybind position',['Left','Right','Top','Bottom','Under crosshair']],['s','ab_kbo','Keybind offset',0,300],['c','ab_aaq','Anti-aim quality bar'],['c','ab_wm','Watermark']]],['bloom.tool',[['c','bl_hit','Bloom hitmarker'],['c','bl_dmg','Hit text'],['c','bl_vig','Screen glow on hit'],['k','bl_col','Bloom color'],['s','bl_int','Glow intensity',0,100]]]]};
 const pg=document.getElementById('pg'),tabs=document.getElementById('tabs'),M=document.getElementById('m'),nv=document.getElementById('nv');
 let curT='Rage',gi=0;const IC={Bots:'<svg viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M8.5 3.5h7"/><circle cx="9.3" cy="13" r="1.4"/><circle cx="14.7" cy="13" r="1.4"/><path d="M9.5 16.5h5M2.6 11.5v4M21.4 11.5v4"/></svg>',Legit:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 3v5M12 16v5M3 12h5M16 12h5"/></svg>',Rage:'<svg viewBox="0 0 24 24"><path d="M6 4h12v8c0 5-3 8-6 8s-6-3-6-8z"/><path d="M8 10h3M13 10h3"/><path d="M9 15h6"/></svg>','Anti-aim':'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/><path d="M12 3v18"/></svg>',Visuals:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 7a5 5 0 0 0 0 10z" fill="currentColor"/><circle cx="12" cy="12" r="8.5" stroke-dasharray="1.6 2.2"/></svg>',Misc:'<svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="9" cy="9" r="6.2" stroke-dasharray="2.2 1.9" stroke-width="2.6"/><circle cx="17" cy="17" r="2"/><circle cx="17" cy="17" r="4" stroke-dasharray="1.5 1.4" stroke-width="2"/></svg>'};
@@ -531,7 +654,15 @@ if(b.aa){if(!b.gh){b.gh=mkAAG(b.g);sc.add(b.gh)}b.gh.visible=S.aach&&!b.dead;b.g
 function netTick(dt){if(hit(P,.34)){stk+=dt;if(stk>.5){const p=onSpawn();P.x=p.x;P.z=p.z;P.vx=P.vz=0;stk=0}}else stk=0;const r=bots[0];if(r&&!r.remote){r.remote=true;r.n='Friend';r.guess=1;r.sf=0;r.aa=false;r.side=1;r.dead=0;r.g.visible=true;r.ko=0}
 netT+=dt;if(netT>.045){netT=0;const ex=S.aa?dsd()*S.desync/58*.28+(S.aamode=='Spin'?Math.sin(ts*12)*S.aarange/180*.28:S.aamode=='Jitter'?(Math.random()<.5?1:-1)*S.aarange/180*.28:0):0;Net.send({t:'s',x:P.x,y:P.y,z:P.z,yaw,cr:P.cr||0,hp:P.hp,inv:(P.inv||0)>0?1:0,aa:S.aa?1:0,ex})}}
 Net.onOpen(()=>{const role=Net.host?0:1,sp=SPAWNS[role];S.online=true;S.v5=false;S.bots=1;S.mode='Deathmatch';S.dump=false;NETR=null;{let sx=MXf(sp[0]),sz=MZf(sp[1]);if(hit({x:sx,z:sz},.6)){const p=rnd();sx=p.x;sz=p.z}P.x=sx;P.z=sz}P.hp=100;P.inv=2;yaw=role?-Math.PI/2:Math.PI/2;notify('Online 1v1','Connected - first to kill wins the exchange','#8fe03a')});
-Net.on(m=>{if(m.t=='s')NETR=validateRemote(m);else if(m.t=='k'){if(P.inv>0)return;P.hp=0;notify('Friend killed you',m.h?'headshot':'body shot','#4fa3ff')}else if(m.t=='b'){beam(new V(...m.a),new V(...m.b),0xffa040,.3);snd(260)}});
+Net.on(m=>{if(m.t=='s')NETR=validateRemote(m);else if(m.t=='k'){if(P.inv>0)return;P.hp=0;notify('Friend killed you',m.h?'headshot':'body shot','#4fa3ff')}else if(m.t=='b'){beam(new V(...m.a),new V(...m.b),0xffa040,.3);snd(260)}
+ /* Real round-trip time, rather than a number invented for the scoreboard.
+    The echo carries the sender's own clock value back untouched, so the two
+    machines never need a shared clock. */
+ else if(m.t=='pi'){Net.send({t:'po',n:m.n})}
+ else if(m.t=='po'){const r=performance.now()-m.n;if(r>=0&&r<10000)NETPING=NETPING?Math.round(NETPING*.7+r*.3):Math.round(r)}
+});
+let NETPING=0,_pingT=0;
+setInterval(()=>{if(ONLINE_MATCH&&Net&&Net.open){_pingT=performance.now();Net.send({t:'pi',n:_pingT})}},2000);
 /* Peer-side movement validation. In a peer to peer match nobody is authoritative,
    so each client polices what it is told about its opponent: a position update that
    implies a speed far above the ranked cap is clamped locally and reported once. */
@@ -575,7 +706,7 @@ const MZL=new THREE.PointLight(0xffa24a,0,7,2);sc.add(MZL);let mzT=0;
 const CAS=new THREE.CylinderGeometry(.0045,.0045,.026,6),CASM=new THREE.MeshStandardMaterial({color:0xc9a24a,metalness:.9,roughness:.3});
 function spr(tex,col,size,pos,vel,life,add,grow,grav){const m=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,color:col,transparent:true,depthWrite:false,blending:add?THREE.AdditiveBlending:THREE.NormalBlending,opacity:1}));m.scale.setScalar(size);m.position.copy(pos);sc.add(m);PFX.push({o:m,v:vel,l:life,l0:life,g:grow||0,gr:grav||0,s:size,sp:1});return m}
 function muzzleFlash(){if(!vm||!vm.visible||kn)return;const L=W_[S.weapon].l;vm.updateMatrixWorld(true);const o=vm.localToWorld(new V(0,.02,-L-(['Glock-18','USP-S','P250','Deagle'].includes(S.weapon)?.02:.5)));const sil=['USP-S'].includes(S.weapon);
- if(!sil){const f=spr(FXT.flash,0xffffff,.22+Math.random()*.1,o,new V(),.045,true);f.material.rotation=Math.random()*6.28;if(S.gfx!='Performance'){MZL.position.copy(o);mzT=.05}}
+ if(!sil){const f=spr(FXT.flash,0xffffff,.22+Math.random()*.1,o,new V(),.045,true);f.material.rotation=Math.random()*6.28;if(GFX()!='Performance'){MZL.position.copy(o);mzT=.05}}
  const e=vm.localToWorld(new V(.05,.03,-.12)),r=new V(Math.cos(yaw),0,-Math.sin(yaw));const c=new THREE.Mesh(CAS,CASM);c.position.copy(e);c.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);sc.add(c);PFX.push({o:c,v:r.multiplyScalar(1.6+Math.random()*.8).add(new V(0,1.6+Math.random(),0)),l:1.4,l0:1.4,cas:1,sp:0,spin:new V(Math.random()*20,Math.random()*20,Math.random()*20)})}
 function impactFx(pt,nrm,bot){const n=nrm||new V(0,1,0);if(bot){for(let i=0;i<7;i++)spr(FXT.dot,0xc01830,.07+Math.random()*.05,pt,new V((Math.random()-.5)*2,Math.random()*1.6,(Math.random()-.5)*2),.35+Math.random()*.2,false,.05,2.5);spr(FXT.puff,0x9a1020,.35,pt,n.clone().multiplyScalar(.4),.35,false,1.4);return}
  for(let i=0;i<9;i++){const v=n.clone().multiplyScalar(2+Math.random()*3).add(new V((Math.random()-.5)*3,Math.random()*2,(Math.random()-.5)*3));spr(FXT.dot,0xffd27a,.045,pt,v,.16+Math.random()*.12,true,0,6)}
@@ -662,9 +793,10 @@ if(b.remote){
  if(b.inv>0){invNote();return}
  if(b.ko>0)return;
  Net.send({t:'k',h:head?1:0});b.ko=.5}d=100;luaHit(head);HvhLua.emit('hit',{head:!!head,name:b.n,kill:b.hp-d<=0});HvhAudio.hit('csgo',!!head,hsOpts(!!head));b.hp-=d;hm=.3;if(S.hitch)ghost(b,S.hcol,.4,0);notify('Killed '+b.n,head?'headshot':'body shot','#8fe03a');msgs.push([(head?'Hit '+b.n+' in the head for ':'Hit '+b.n+' for ')+Math.round(d),3]);
-if(b.hp<=0){if(S.deathch)ghost(b,S.dcol,2.5,1);b.dead=2;b.rs=2.5;if(b.remote||S.nodeath){b.g.visible=false}else{b.dth=0;b.dsd=Math.random()<.5?1:-1}kills++;money=Math.min(16000,money+300);msgs.push(['Killed '+b.n,3])}}
+MS.dmg+=Math.min(d,Math.max(0,b.hp+d));if(head)MS.hs++;
+if(b.hp<=0){if(S.deathch)ghost(b,S.dcol,2.5,1);b.dead=2;b.rs=2.5;if(b.remote||S.nodeath){b.g.visible=false}else{b.dth=0;b.dsd=Math.random()<.5?1:-1}kills++;MS.k++;money=Math.min(16000,money+300);msgs.push(['Killed '+b.n,3])}}
 function eyeM(){return eye().add(MO)}
-function fire(dir,ok){if(pDead)return 1;rc.set(eyeM(),dir);rc.far=200;const hs=rc.intersectObjects([...(mgc?[]:walls),...bots.filter(b=>!b.dead).map(b=>b.g)],true);shot(hs.length?hs[0].point:eyeM().add(dir.clone().multiplyScalar(60)),hs.length?hs[0]:null);
+function fire(dir,ok){if(pDead||DEBUG_FLY)return 1;rc.set(eyeM(),dir);rc.far=200;const hs=rc.intersectObjects([...(mgc?[]:walls),...bots.filter(b=>!b.dead).map(b=>b.g)],true);shot(hs.length?hs[0].point:eyeM().add(dir.clone().multiplyScalar(60)),hs.length?hs[0]:null);
 if(!hs.length)return 0;let o=hs[0].object;while(o&&!o.userData.bot)o=o.parent;const b=o&&o.userData.bot;if(!b)return 0;if(ok===false&&b.aa)return 0;dmg(b,100,!!hs[0].object.userData.head);return b}
 const SPR=()=>{const w=S.weapon;return(W_[w].p?.012:(w=='AWP'||w=='Scout')?.002:.01)*(Math.hypot(P.vx,P.vz)>1?4:1)},rv=sp=>new V((Math.random()-.5)*2*sp,(Math.random()-.5)*2*sp,(Math.random()-.5)*2*sp);
 function rage(t,mu){if(kn||!S.rage||(!mu&&t-last<W_[S.weapon].r*(S.dt?.5:1)))return;if(!S.autofire&&!down)return;const e=eyeM(),v=vd();let best=null,bd=1e9;
@@ -682,19 +814,19 @@ addEventListener('mousedown',e=>{if(locked){down=1;if(!S.rage||!S.autofire){}}})
 O.addEventListener('click',()=>{if(document.getElementById('m').style.display!='block')O.requestPointerLock()});
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement==O;document.getElementById('hint').style.display=locked?'none':'block'});
 function size(){if(composer){composer.setSize(innerWidth,innerHeight);if(smaaPass)smaaPass.setSize(innerWidth,innerHeight)}
- const w=innerWidth,h=innerHeight,d=Math.min(devicePixelRatio,S.gfx=='Performance'?1:S.gfx=='Balanced'?1.25:1.75);ren.setPixelRatio(d);ren.setSize(w,h,false);O.width=w;O.height=h;cam.aspect=w/h;cam.updateProjectionMatrix()}
+ const w=innerWidth,h=innerHeight,d=Math.min(devicePixelRatio,GFX()=='Performance'?1:GFX()=='Balanced'?1.25:1.75);ren.setPixelRatio(d);ren.setSize(w,h,false);O.width=w;O.height=h;cam.aspect=w/h;cam.updateProjectionMatrix()}
 addEventListener('resize',size);
 /* Ambient occlusion is what turns flat boxes into architecture: it darkens the
    creases where walls meet floors and where props sit on the ground. */
 let composer=null,saoPass=null,smaaPass=null;
 function buildComposer(){
  if(composer){composer.dispose&&composer.dispose();composer=null}
- if(S.gfx==='Performance'||!window.THREE.EffectComposer)return;
+ if(GFX()==='Performance'||!window.THREE.EffectComposer)return;
  try{
   const w=innerWidth,h=innerHeight;
   composer=new THREE.EffectComposer(ren);
   composer.addPass(new THREE.RenderPass(sc,cam));
-  if(S.gfx==='Quality'&&THREE.SAOPass){
+  if(GFX()==='Quality'&&THREE.SAOPass){
    saoPass=new THREE.SAOPass(sc,cam,false,true);
    saoPass.params.saoBias=.4;saoPass.params.saoIntensity=.022;saoPass.params.saoScale=14;
    saoPass.params.saoKernelRadius=28;saoPass.params.saoBlur=true;saoPass.params.saoBlurRadius=8;
@@ -708,7 +840,16 @@ function buildComposer(){
   try{composer.render()}catch(e){}
  }catch(e){console.warn('composer unavailable, rendering direct',e);composer=null}
 }const VIGC=(()=>{const c=document.createElement('canvas');c.width=256;c.height=144;const q=c.getContext('2d'),g=q.createRadialGradient(128,72,40,128,72,150);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(8,10,20,.42)');q.fillStyle=g;q.fillRect(0,0,256,144);return c})();
-function applyGfx(){const q=S.gfx,sm=q=='Quality'?2048:q=='Balanced'?1536:1024;sun.shadow.mapSize.set(sm,sm);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}sun.castShadow=true;size();buildComposer()}
+/* Boost FPS is a single switch for people whose machine cannot hold a frame
+   rate, so it does not just nudge the quality dropdown: it turns off the whole
+   post-processing chain and dynamic shadows and drops the render scale, which
+   are the three things that actually cost frames here. Gameplay is untouched -
+   same geometry, same hitboxes, same bots - so it is safe to leave on. */
+function applyGfx(){const q=S.boost?'Performance':S.gfx,sm=S.boost?512:q=='Quality'?2048:q=='Balanced'?1536:1024;sun.shadow.mapSize.set(sm,sm);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}sun.castShadow=!S.boost;size();buildComposer()}
+/* Boost FPS comes in with the session config so it is already on for the very
+   first frame - switching it on after the player has watched the game stutter
+   is most of the way to not having the option at all. */
+if(SESSION.boost)S.boost=true;
 size();applyGfx();
 let t0=performance.now(),fps=60,ts=0;
 function proj(x,y,z){const v=new V(x,y,z).project(cam);return{x:(v.x+1)/2*O.width,y:(1-v.y)/2*O.height,ok:v.z<1}}
@@ -727,7 +868,30 @@ const fz=phase!='live',f=fz?0:(keys.KeyW?1:0)-(keys.KeyS?1:0),s=fz?0:(keys.KeyD?
 P.cr=(P.cr||0)+((keys.KeyC?1:0)-(P.cr||0))*Math.min(1,dt*12);const SP=(S.slow?Math.min(2.2,moveSpeed()):moveSpeed())*(1-.5*P.cr)*(kn?1.12:1);if(P.g){if(keys.Space&&!fz&&(S.bhop||P.jr)){P.vy=5.2;P.g=0;P.jr=0}else{const k=Math.min(1,dt*12);P.vx+=(wx*SP-P.vx)*k;P.vz+=(wz*SP-P.vz)*k}}
 else{P.vx+=wx*(S.astr?30:14)*dt;P.vz+=wz*(S.astr?30:14)*dt;const c=SP*(S.bhop?(S.astr?2.2:1.5):1),h=Math.hypot(P.vx,P.vz);if(h>c){P.vx*=c/h;P.vz*=c/h}}
 if(!keys.Space)P.jr=1;P.vy-=14*dt;P.y+=P.vy*dt;if(P.y<=0){P.y=0;P.vy=0;P.g=1}
-mv(P,P.vx*dt,P.vz*dt,.35);if(P.hp<=0&&phase=='live'){deaths++;HvhLua.emit('death',{});if(S.mode=='Deathmatch'){const p=S.online?onSpawn():rnd();P.x=p.x;P.z=p.z;P.hp=100;P.inv=1;P.vx=P.vz=0;notify('You died','respawned instantly','#ff4d5a')}else if(V5()&&!pDead&&mates.some(m=>!m.dead)){pDead=1;P.hp=100;P.inv=1e9;notify('You died','spectating your team','#ff4d5a')}else{msgs.push(['You died',3]);endRound(0)}}
+mv(P,P.vx*dt,P.vz*dt,.35);
+/* Dying in an online match blacks the screen out until the next round rather
+   than handing you a free camera over a live match - a dead player with a
+   flying view is a wallhack everyone can agree on. */
+BLACK.style.display=(ONLINE_MATCH&&!DEBUG_FLY&&(pDead||P.hp<=0))?'flex':'none';
+if(BLACK.style.display==='flex'&&!BLACK.dataset.on){BLACK.dataset.on='1';
+ BLACK.innerHTML='<div style="font:bold 13px Verdana;letter-spacing:.2em;color:#5d646f">ELIMINATED</div>'+
+  '<div style="font:11px Verdana;color:#3d434c">waiting for the next round</div>'}
+else if(BLACK.style.display!=='flex'&&BLACK.dataset.on)delete BLACK.dataset.on;
+/* Owner commentary camera: no weapon, no damage, no collision, no scoring. It
+   overwrites the position the normal physics just produced rather than being
+   threaded through them, so ordinary movement is left exactly as it was. */
+if(DEBUG_FLY){
+ const spd=(keys.ShiftLeft?26:11)*dt, cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp2=Math.sin(pitch);
+ let fx=0,fz=0,fy=0;
+ if(keys.KeyW){fx+=-sy*cp;fz+=-cy*cp;fy+=sp2}
+ if(keys.KeyS){fx+= sy*cp;fz+= cy*cp;fy-=sp2}
+ if(keys.KeyA){fx+=-cy;fz+= sy}
+ if(keys.KeyD){fx+= cy;fz+=-sy}
+ if(keys.Space)fy+=1;
+ if(keys.ControlLeft)fy-=1;
+ P.x+=fx*spd;P.z+=fz*spd;P.y=Math.max(-4,Math.min(90,P.y+fy*spd));
+ P.vx=P.vz=P.vy=0;P.hp=100;P.inv=9;P.g=0;
+}if(P.hp<=0&&phase=='live'){deaths++;MS.d++;if(typeof LASTHIT!=='undefined'&&LASTHIT){const st=LASTHIT.st||(LASTHIT.st={k:0,d:0,dmg:0,hs:0});st.k++;LASTHIT=null}HvhLua.emit('death',{});if(S.mode=='Deathmatch'){const p=S.online?onSpawn():rnd();P.x=p.x;P.z=p.z;P.hp=100;P.inv=1;P.vx=P.vz=0;notify('You died','respawned instantly','#ff4d5a')}else if(V5()&&!pDead&&mates.some(m=>!m.dead)){pDead=1;P.hp=100;P.inv=1e9;notify('You died','spectating your team','#ff4d5a')}else{msgs.push(['You died',3]);endRound(0)}}
 {const mOn=canManip()&&keys.KeyK&&locked&&phase=='live',mx=S.mrange/10,tg=new V();if(mOn){let bd=1e9,bb=null;for(const b of bots){if(b.dead)continue;const d=(b.x-P.x)**2+(b.z-P.z)**2;if(d<bd){bd=d;bb=b}}if(bb){const dx=bb.x-P.x,dz=bb.z-P.z,l=Math.hypot(dx,dz)||1,k=Math.min(mx,Math.max(0,l-.5));tg.set(dx/l*k,0,dz/l*k)}else{const v=vd();v.y=0;if(v.lengthSq()>1e-6)tg.copy(v.normalize().multiplyScalar(mx))}}
 const dl=tg.sub(MO),st=Math.min(dl.length(),dt*6);if(st>0)MO.add(dl.normalize().multiplyScalar(st));manipOn=MO.length()>.03;mgc=!!(canMagic()&&mOn);mpm.visible=manipOn;mpm.position.copy(eyeM());}
 if(locked&&phase=='live'){const rr=W_[S.weapon].r*(S.dt?.5:1),cnt=rr<.02?Math.min(bots.length>100?2:40,Math.max(1,Math.floor(dt/rr))):1;for(let i=0;i<cnt;i++){if(!rage(t,i>0))break}}
@@ -746,7 +910,7 @@ const ex=S.aa?dsd()*S.desync/58*.28+(S.aamode=='Spin'?Math.sin(ts*12)*S.aarange/
 const ppx=pd?(b.z-P.z)/pd:0,ppz=pd?-(b.x-P.x)/pd:0,lg=S.fl?(lag.x-P.x)*ppx+(lag.z-P.z)*ppz:0;
 const rsf=S.bres/100*D.rs,gs=0,pb=S.aa?Math.min(.95,Math.max(.04,aaQ()*1.1-rsf*.55+.06)):0,bt=Math.random()<pb;
 const sb=.02*(1.5-Math.min(1,S.botacc/100*D.acc))*(slow?1:1.8),er=Math.abs(lg+(Math.random()-.5)*2*pd*sb);
-const hitOK=!bt&&!S.dump&&er<.23,dec=bt||(!hitOK&&S.fl&&Math.abs(lg)>.2),ap=dec?(bt?new V(P.x+Math.cos(yaw)*FK*dsd(),pe.y,P.z-Math.sin(yaw)*FK*dsd()):new V(P.x+ppx*lg,pe.y,P.z+ppz*lg)):(S.dump?(()=>{const sd=(Math.random()<.5?-1:1)*(.7+Math.random()*1.5);return pe.clone().add(new V(ppx*sd,(Math.random()-.5)*1.2,ppz*sd))})():pe.clone().add(new V((Math.random()-.5)*3,(Math.random()-.5)*1.5,(Math.random()-.5)*3))),wn_=b.g.userData.wn;if(S.trace)beam(new V(b.x,1.4,b.z),hitOK?pe:ap,dec?'#c77dff':'#ff6a6a',.3);if(dec||S.dump)b.dump=(b.dump||0)+1;b.am=(b.am==null?(MAG[wn_]||30):b.am)-1;if(b.am<=0){b.rl=2.2;b.am=null;if((b.dump||0)>=(MAG[wn_]||30)*.4)notify(b.n+' emptied its mag','into your fake anti-aim','#c77dff');b.dump=0}if(hitOK){if(!(P.inv>0)){P.hp-=100;hurt=.5}}else if(bt){if(Math.random()<.35)notify(b.n+' shot your fake','AA quality '+Math.round(aaQ()*100)+'%','#c77dff')}else if(!dec&&!S.dump)notify(b.n+' missed you','spread · '+Math.round(pd)+'m','#4fa3ff')}}
+const hitOK=!bt&&!S.dump&&er<.23,dec=bt||(!hitOK&&S.fl&&Math.abs(lg)>.2),ap=dec?(bt?new V(P.x+Math.cos(yaw)*FK*dsd(),pe.y,P.z-Math.sin(yaw)*FK*dsd()):new V(P.x+ppx*lg,pe.y,P.z+ppz*lg)):(S.dump?(()=>{const sd=(Math.random()<.5?-1:1)*(.7+Math.random()*1.5);return pe.clone().add(new V(ppx*sd,(Math.random()-.5)*1.2,ppz*sd))})():pe.clone().add(new V((Math.random()-.5)*3,(Math.random()-.5)*1.5,(Math.random()-.5)*3))),wn_=b.g.userData.wn;if(S.trace)beam(new V(b.x,1.4,b.z),hitOK?pe:ap,dec?'#c77dff':'#ff6a6a',.3);if(dec||S.dump)b.dump=(b.dump||0)+1;b.am=(b.am==null?(MAG[wn_]||30):b.am)-1;if(b.am<=0){b.rl=2.2;b.am=null;if((b.dump||0)>=(MAG[wn_]||30)*.4)notify(b.n+' emptied its mag','into your fake anti-aim','#c77dff');b.dump=0}if(hitOK){if(!(P.inv>0)){P.hp-=100;hurt=.5;LASTHIT=b;const _st=b.st||(b.st={k:0,d:0,dmg:0,hs:0});_st.dmg+=100}}else if(bt){if(Math.random()<.35)notify(b.n+' shot your fake','AA quality '+Math.round(aaQ()*100)+'%','#c77dff')}else if(!dec&&!S.dump)notify(b.n+' missed you','spread · '+Math.round(pd)+'m','#4fa3ff')}}
 // aa model
 let ay=yaw;if(S.aa){ay+=dsd()*S.desync/57.3+(S.aamode=='Spin'?ts*12:S.aamode=='Jitter'?(Math.floor(ts*8)%2?1:-1)*S.aarange/57.3:Math.PI)}
 pm.visible=S.tp;pm.position.set(P.x,P.y,P.z);pm.scale.y=1-.3*(P.cr||0);pm.rotation.y=ay;pm.rotation.x=0;if(pm.userData.hg)pm.userData.hg.rotation.x=S.aa?(S.ptc=='Down'?-.85:S.ptc=='Up'?.85:0):0;pm.userData.legs.forEach((l,i)=>l.rotation.x=Math.sin(ts*9+i*3.14)*Math.min(1,Math.hypot(P.vx,P.vz)/4)*.6);pg2.visible=S.tp&&S.aa&&S.aach;{const fkS=S.aa?dsd():1;pg2.position.set(P.x+Math.cos(yaw)*FK*fkS,P.y,P.z-Math.sin(yaw)*FK*fkS);pg2.rotation.y=ay+Math.PI}pg2.scale.y=pm.scale.y;gm.visible=S.tp&&S.fl;gm.position.set(lag.x,P.y,lag.z);gm.rotation.y=ay;lbls.forEach(l=>l.visible=S.lbl);const nc=S.night?0x0a0e1a:0xbcd6ee;sc.background=S.night?NC:SKY;sc.fog.color.set(nc);sc.fog.near=S.nofog?1e4:60;sc.fog.far=S.nofog?1e5:170;if(S.twalls!==lastTW){lastTW=S.twalls;walls.forEach(w=>{w.material.transparent=S.twalls>0;w.material.opacity=1-S.twalls/125;w.material.needsUpdate=true})}sun.intensity=S.night?.15:.8;hem.intensity=S.night?.3:.62;
@@ -754,7 +918,7 @@ bm.depthTest=true;GLM.color.set(S.glowcol);bots.forEach(b=>{b.ol.forEach(o=>o.vi
 cam.fov=S.cfov;cam.updateProjectionMatrix();const e=eye(),v=vd();cam.rotation.set(pitch,yaw,0);
 let cp=e.clone();if(S.tp){cp.sub(v.clone().multiplyScalar(S.tpd));rc.set(e,v.clone().negate());rc.far=S.tpd;const hh=rc.intersectObjects(walls);if(hh.length)cp=e.clone().sub(v.clone().multiplyScalar(Math.max(.3,hh[0].distance-.2)))}cam.position.copy(cp);
 if(vmN!=(kn?'Knife':S.weapon)){if(vm)cam.remove(vm);sc.remove(pm,gm);const wk=kn?'Knife':S.weapon;pm=mkHuman(wk);gm=mkGhost();if(pg2)sc.remove(pg2);pg2=mkAAG(pm);sc.add(pm,gm,pg2);HvhLua.emit('weapon',{name:wk});vm=wk=='Knife'?mkKnife(1):mkGun(wk);vm.position.set(.22,-.2,-.35);cam.add(vm);vmN=wk;anim('draw')}
-HvhLua.emit('tick',dt);vm.visible=S.vm&&!S.tp;/* kick is the firing recoil of the viewmodel and both places that raise it
+HvhLua.emit('tick',dt);vm.visible=S.vm&&!S.tp&&!DEBUG_FLY;/* kick is the firing recoil of the viewmodel and both places that raise it
    clamp to .07. Only the decay was unclamped, so a single frame with a
    negative dt grows it instead of shrinking it - and at kick~4.8 the weapon
    sits nearly five units BEHIND the camera and is simply not drawn, then
@@ -763,9 +927,12 @@ HvhLua.emit('tick',dt);vm.visible=S.vm&&!S.tp;/* kick is the firing recoil of th
    relying on every writer to respect it. */
 kick=Math.max(0,Math.min(.07,kick-dt*.5));vm.position.z=-.35+kick;slash=Math.max(0,slash-dt*3);vm.rotation.x=kn?-slash*1.4:kick*1.6;vm.position.y=-.2-(kn?slash*.08:0);if(ANI.t<ANI.d){ANI.t+=dt;const u=Math.min(1,ANI.t/ANI.d),bmp=Math.sin(Math.PI*u),e=u<.5?2*u*u:1-2*(1-u)*(1-u);if(ANI.k=='draw'){vm.position.y-=.35*(1-e);vm.rotation.x-=.9*(1-e)}else if(ANI.k=='reload'){vm.position.y-=.14*bmp;vm.rotation.x-=.4*bmp;vm.rotation.z=.55*bmp;vm.position.x=.22-.06*bmp;if(u>.3&&u<.36)vm.position.y-=.03}else if(ANI.k=='inspect'){vm.rotation.y=-.9*bmp+Math.sin(u*Math.PI*3)*.25*bmp;vm.rotation.z=.6*Math.sin(u*Math.PI*2)*bmp;vm.position.x=.22-.1*bmp;vm.position.y+=.04*bmp}}else{vm.rotation.z=0;vm.rotation.y=0;vm.position.x=.22}FX.forEach(f=>{f.l-=dt;const k=Math.max(0,f.l/f.l0);f.g.traverse(o=>{if(o.isMesh)o.material.opacity=k*.6});if(f.fall){f.g.rotation.x=-Math.min(1,(1-k)*5)*1.45}});for(let i=FX.length-1;i>=0;i--)if(FX[i].l<=0){sc.remove(FX[i].g);FX.splice(i,1)}updFx(dt);tr=tr.filter(l=>{l.material.opacity=Math.max(0,l.life/l.l0)*.9;if((l.life-=dt)<=0){sc.remove(l);return false}return true});
 if(window.__cam)window.__cam(cam,P,bots);trackSun();
+/* The launch screen clears on this rather than on a timer, so it never
+   uncovers a world that has not finished building. */
+if(!window.__ready){window.__ready=1;try{parent.postMessage('hvh:ready','*')}catch(e){}}
 if(composer)composer.render();else ren.render(sc,cam);
 // hud
-const w=O.width,h=O.height;X.clearRect(0,0,w,h);if(S.vig&&S.gfx!='Performance')X.drawImage(VIGC,0,0,w,h);X.font='11px Verdana';
+const w=O.width,h=O.height;X.clearRect(0,0,w,h);if(S.vig&&GFX()!='Performance')X.drawImage(VIGC,0,0,w,h);X.font='11px Verdana';
 for(const b of bots){if(b.dead)continue;const a=proj(b.x,0,b.z),c=proj(b.x,1.85,b.z);if(S.arrow&&(!a.ok||a.x<0||a.x>w||a.y<0||a.y>h)){const dx=b.x-P.x,dz=b.z-P.z,an=Math.atan2(dx*Math.cos(yaw)-dz*Math.sin(yaw),-dx*Math.sin(yaw)-dz*Math.cos(yaw));X.fillStyle='#ff3b6b';X.save();X.translate(w/2+Math.sin(an)*200,h/2-Math.cos(an)*200);X.rotate(an);X.beginPath();X.moveTo(0,-10);X.lineTo(8,8);X.lineTo(-8,8);X.fill();X.restore()}if(!a.ok||!c.ok)continue;if(bots.length>60&&Math.abs(b.x-P.x)+Math.abs(b.z-P.z)>40)continue;const bh=a.y-c.y,bw=bh*.45;
 if(S.esp){X.strokeStyle='#000';X.lineWidth=3;X.strokeRect(a.x-bw/2,c.y,bw,bh);X.strokeStyle='#fff';X.lineWidth=1;X.strokeRect(a.x-bw/2,c.y,bw,bh)}
 if(S.name){X.fillStyle='#fff';X.textAlign='center';X.fillText(b.n,a.x,c.y-4)}
@@ -776,7 +943,36 @@ if(S.dist){X.fillStyle='#ccc';X.textAlign='center';X.fillText(Math.round(Math.hy
 if(S.skel){X.strokeStyle='#fff';X.beginPath();const hd=proj(b.x,1.65,b.z),pl=proj(b.x,.85,b.z);X.moveTo(hd.x,hd.y);X.lineTo(pl.x,pl.y);X.lineTo(a.x-bw/4,a.y);X.moveTo(pl.x,pl.y);X.lineTo(a.x+bw/4,a.y);X.moveTo(pl.x-bw/2,pl.y);X.lineTo(pl.x+bw/2,pl.y);X.stroke()}}
 if(S.radar){const rx=w-80,ry=130,rr=70;X.fillStyle='rgba(18,18,18,.8)';X.beginPath();X.arc(rx,ry,rr,0,7);X.fill();X.strokeStyle='#333';X.stroke();X.fillStyle='#4d9fff';X.fillRect(rx-2,ry-2,4,4);
 for(const b of bots){if(b.dead)continue;const dx=b.x-P.x,dz=b.z-P.z;let px=(dx*Math.cos(yaw)-dz*Math.sin(yaw))*1.4,py=(dx*Math.sin(yaw)+dz*Math.cos(yaw))*1.4;const m_=Math.hypot(px,py);if(m_>rr-4){px*=(rr-4)/m_;py*=(rr-4)/m_}X.fillStyle='#ff3b6b';X.fillRect(rx+px-2,ry+py-2,4,4)}}
-X.textAlign='center';X.font='bold 16px Verdana';X.fillStyle='#fff';X.fillText('YOU '+score[0]+' - '+score[1]+' BOTS   Round '+rd+'   '+(phase=='buy'?'BUY '+Math.ceil(pt):phase=='live'?'LIVE':''),w/2,26);
+/* --- competitive match header: T score, round and timer, CT score ---
+   Scaled off the canvas width so it holds together from a phone to an
+   ultrawide rather than being pinned to one resolution. */
+(function matchHud(){
+ const sc_=Math.max(.72,Math.min(1.25,w/1280)), BW=300*sc_, BH=42*sc_, x0=w/2-BW/2, y0=6*sc_;
+ const mine=score[0], theirs=score[1];
+ const sT = TEAM_ME==='T'?mine:theirs, sCT = TEAM_ME==='CT'?mine:theirs;
+ X.save();
+ X.fillStyle='rgba(10,12,16,.72)';X.fillRect(x0,y0,BW,BH);
+ /* the leading side gets a lit bar; a tie lights neither, so a draw reads as a
+    draw instead of looking like one side is ahead */
+ const lead = sT===sCT?null:(sT>sCT?'T':'CT');
+ X.fillStyle=lead==='T'?TCOL.T:TDIM.T; X.fillRect(x0,y0,BW*.28,3*sc_);
+ X.fillStyle=lead==='CT'?TCOL.CT:TDIM.CT; X.fillRect(x0+BW*.72,y0,BW*.28,3*sc_);
+ X.textAlign='center';X.textBaseline='alphabetic';
+ X.font='bold '+Math.round(11*sc_)+'px Verdana';
+ X.fillStyle=TCOL.T;  X.fillText('T', x0+BW*.11, y0+18*sc_);
+ X.fillStyle=TCOL.CT; X.fillText('CT',x0+BW*.89, y0+18*sc_);
+ X.font='bold '+Math.round(24*sc_)+'px Verdana';
+ X.fillStyle=lead==='T'?'#fff':'#c8c8c8';  X.fillText(sT,  x0+BW*.25, y0+30*sc_);
+ X.fillStyle=lead==='CT'?'#fff':'#c8c8c8'; X.fillText(sCT, x0+BW*.75, y0+30*sc_);
+ X.font='bold '+Math.round(10*sc_)+'px Verdana'; X.fillStyle='#8c93a0';
+ X.fillText('ROUND '+rd, w/2, y0+15*sc_);
+ const ph = phase==='buy' ? String(Math.ceil(pt)) : phase==='live' ? 'LIVE' : phase==='over' ? 'ROUND END' : String(phase||'').toUpperCase();
+ X.font='bold '+Math.round(15*sc_)+'px Verdana';
+ X.fillStyle = (phase==='buy'&&pt<=10)?'#ff6b6b':'#fff';
+ X.fillText(ph, w/2, y0+32*sc_);
+ if(sT===sCT&&sT>0){X.font='bold '+Math.round(8*sc_)+'px Verdana';X.fillStyle='#8c93a0';X.fillText('TIED',w/2,y0+41*sc_)}
+ X.restore();
+})();
 X.textAlign='left';X.fillStyle='#8fe03a';X.fillText('$'+money,20,h-64);
 if(manipOn){const len=MO.length(),mx=S.mrange/10,f=Math.min(1,len/mx),W2=300,H2=14,bx0=w/2-W2/2,by0=78;X.save();X.fillStyle='rgba(10,11,13,.9)';X.fillRect(bx0-12,by0-24,W2+24,H2+36);X.strokeStyle='#2a2c30';X.lineWidth=1;X.strokeRect(bx0-11.5,by0-23.5,W2+23,H2+35);X.fillStyle=f>.85?'#ff4d5a':f>.55?'#ffc94d':'#8fe03a';X.fillRect(bx0-12,by0-24,W2+24,2);X.font='bold 11px Verdana';X.textAlign='left';X.fillStyle='#e8e8ea';X.fillText('MANIPULATION',bx0,by0-9);X.textAlign='right';X.fillStyle=f>.85?'#ff4d5a':f>.55?'#ffc94d':'#8fe03a';X.fillText(len.toFixed(2)+'m / '+mx.toFixed(2)+'m',bx0+W2,by0-9);X.fillStyle='#1b1c1f';X.fillRect(bx0,by0,W2,H2);const sg=30,sw=W2/sg;for(let i=0;i<sg;i++){if(i/sg<f){X.fillStyle=i/sg>.85?'#ff4d5a':i/sg>.55?'#ffc94d':'#8fe03a';X.fillRect(bx0+i*sw+1,by0+2,sw-2,H2-4)}}if(mgc){X.textAlign='center';X.fillStyle='#35e0ff';X.fillText('MAGIC BULLET',w/2,by0+H2+12)}X.restore()}
 if(phase=='buy'||(S.mode=='Deathmatch'&&bo)){X.fillStyle='rgba(12,13,15,.85)';X.fillRect(24,h/2-128,230,250);X.font='13px Verdana';ALL.forEach((n,i)=>{X.fillStyle=n==S.weapon?'#9fca2b':money>=W_[n].$?'#fff':'#777';X.fillText((i+1)%10+'   '+n+'   $'+W_[n].$,40,h/2-100+i*22)})}
