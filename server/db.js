@@ -2,7 +2,16 @@
    Zero dependencies: uses node:sqlite (Node 22.5+). One file on disk, WAL mode.
    Every schema change is a numbered migration so an existing database upgrades in place. */
 'use strict';
-const { DatabaseSync } = require('node:sqlite');
+/* node:sqlite landed in Node 22.5. Fail with a sentence a human can act on
+   rather than a cryptic module-not-found. */
+let DatabaseSync;
+try { ({ DatabaseSync } = require('node:sqlite')); }
+catch (e) {
+  console.error('\nThis server needs Node 22.5 or newer (it uses the built-in node:sqlite).');
+  console.error('You are running ' + process.version + '.');
+  console.error('On Railway/Render set NIXPACKS_NODE_VERSION=22, or keep the .nvmrc in this repo.\n');
+  process.exit(1);
+}
 const path = require('path');
 const fs = require('fs');
 

@@ -1,0 +1,11 @@
+{
+  "name": "hvh-platform",
+  "version": "4.0.0",
+  "private": true,
+  "description": "HvH platform: accounts, matchmaking, tournaments and owner administration. No dependencies.",
+  "engines": { "node": ">=22.5" },
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "node server/test.js"
+  }
+}
