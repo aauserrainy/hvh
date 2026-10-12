@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
-<title>HvH</title>
+<title>rainy.hvh</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
 :root{--bg:#0b0c0e;--p:#131519;--p2:#181b20;--l:#272b32;--t:#dfe3e8;--m:#878f9b;--a:#4d8df0;--g:#8fe03a;--r:#ff5468;--y:#ffc04d;
@@ -130,6 +130,66 @@ tr:last-child td{border-bottom:0}
  border:1px solid #333a44;background:#0d0f12cc;color:#c9ced6;letter-spacing:.08em}
 #modeTag{position:fixed;z-index:41;right:12px;top:12px;display:none;padding:5px 11px;font-size:11px;border-radius:6px;
  border:1px solid;letter-spacing:.1em;font-weight:700}
+
+/* ---------- layout ---------- */
+.grid3{display:grid;grid-template-columns:1fr 1.05fr;gap:14px;align-items:start}
+@media(max-width:900px){.grid3{grid-template-columns:1fr}}
+.col{min-width:0}
+
+/* ---------- chat ---------- */
+.chatpanel{display:flex;flex-direction:column}
+.panel>h4 .cnt{font-size:10px;color:var(--m);letter-spacing:.08em}
+.chatwrap{display:grid;grid-template-columns:1fr 132px;min-height:0}
+.chatlog{height:328px;overflow-y:auto;padding:10px 12px;scrollbar-width:thin;scrollbar-color:#2b3039 transparent}
+.chatlog::-webkit-scrollbar{width:7px}
+.chatlog::-webkit-scrollbar-thumb{background:#2b3039;border-radius:4px}
+.chatside{border-left:1px solid var(--l);padding:10px;overflow-y:auto;height:328px}
+.sidehead{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:#5e6672;margin-bottom:8px}
+.ou{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:#aeb6c2;min-width:0}
+.ou i{width:5px;height:5px;border-radius:50%;background:var(--g);flex:none;box-shadow:0 0 5px var(--g)}
+.ou span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ou.own{color:#fff}
+.cm{margin:0 0 9px;font-size:13px;line-height:1.45;word-wrap:break-word}
+.cm .nm{font-weight:700;margin-right:3px}
+.cm .uidb{font-size:9.5px;font-weight:700;letter-spacing:.06em;color:#6c7684;border:1px solid #272b32;
+ border-radius:4px;padding:1px 4px;margin-right:6px;vertical-align:1px}
+.cm .tx{color:#c3cad4}
+.cm.me .tx{color:#dfe6ef}
+/* the owner's name carries a soft white presence */
+.cm.own .nm{color:#fff;text-shadow:0 0 6px rgba(255,255,255,.95),0 0 16px rgba(255,255,255,.55),0 0 34px rgba(190,214,255,.4)}
+.cm.own .uidb{color:#e9eef6;border-color:#4a5262;background:#ffffff0d;
+ box-shadow:0 0 8px rgba(255,255,255,.22)}
+.ou.own i{background:#fff;box-shadow:0 0 7px #fff,0 0 15px rgba(190,214,255,.7)}
+.ou.own span{text-shadow:0 0 7px rgba(255,255,255,.75)}
+.chatform{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--l)}
+.chatform input{flex:1}
+.chaterr{padding:0 12px 10px;font-size:11.5px;color:var(--r);min-height:0}
+
+/* ---------- motion ---------- */
+@keyframes riseIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.97) translateY(6px)}to{opacity:1;transform:none}}
+@keyframes sheen{to{background-position:200% 0}}
+.act{animation:riseIn .42s cubic-bezier(.22,.78,.3,1) both}
+.act:nth-child(1){animation-delay:.02s}.act:nth-child(2){animation-delay:.08s}
+.act:nth-child(3){animation-delay:.14s}.act:nth-child(4){animation-delay:.2s}
+.act:nth-child(5){animation-delay:.26s}
+.panel{animation:riseIn .46s cubic-bezier(.22,.78,.3,1) both .16s}
+.cm{animation:slideIn .22s ease-out both}
+.modal{animation:popIn .2s cubic-bezier(.2,.8,.3,1) both}
+.ov{animation:riseIn .16s ease-out both}
+/* the accent edge on a tile wipes in on hover rather than just appearing */
+.act:before{transform:scaleY(0);transform-origin:top;transition:transform .32s cubic-bezier(.22,.78,.3,1)}
+.act:hover:before{transform:scaleY(1)}
+.act h3{transition:letter-spacing .3s cubic-bezier(.22,.78,.3,1)}
+.act:hover h3{letter-spacing:.1em}
+.code{background:linear-gradient(90deg,var(--a) 0%,#9fd0ff 18%,var(--a) 36%) 0 0/200% 100% text;
+ -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+ animation:sheen 3.4s linear infinite}
+.btn,.icon-btn{transition:filter .15s,transform .08s,background .15s,border-color .15s}
+@media (prefers-reduced-motion:reduce){
+  *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
 </style></head><body>
 <div id="bg"></div>
 <div class="wrap">
@@ -137,7 +197,7 @@ tr:last-child td{border-bottom:0}
   <!-- ============ AUTH ============ -->
   <section id="auth">
     <div class="card"><div class="bar"></div><div class="pad">
-      <h1>HvH <span>CLIENT</span></h1>
+      <h1>rainy<span>.hvh</span></h1>
       <p class="sub" id="authSub">Sign in to play online.</p>
       <div class="msg" id="authMsg"></div>
       <form id="authForm" autocomplete="on">
@@ -159,7 +219,7 @@ tr:last-child td{border-bottom:0}
   <!-- ============ MENU ============ -->
   <section id="menu" class="hide">
     <header>
-      <div class="logo">HvH <span>CLIENT</span></div>
+      <div class="logo">rainy<span>.hvh</span></div>
       <div class="spacer"></div>
       <button class="icon-btn" id="inboxBtn" title="Inbox">✉<span class="pill hide" id="unread">0</span></button>
       <button class="icon-btn" id="setBtn" title="Account settings">⚙</button>
@@ -178,19 +238,31 @@ tr:last-child td{border-bottom:0}
         <button class="act" style="--ac:#ffc04d" id="aOffline"><h3>JOIN OFFLINE</h3><p>Play against bots. Every sandbox feature unlocked.</p></button>
         <button class="act" style="--ac:#a057e8" id="aTourn"><h3>TOURNAMENTS</h3><p>Browse brackets and register a team.</p></button>
       </div>
-      <div class="grid2">
-        <div>
+      <div class="grid3">
+        <div class="col">
           <div class="panel"><h4>Open lobbies<span class="spacer"></span><button class="btn ghost sm" id="refLob">Refresh</button></h4>
             <div class="body" id="lobbies"><div class="empty">Loading…</div></div></div>
-          <div class="panel"><h4>Recent matches</h4><div class="body" id="history"><div class="empty">—</div></div></div>
-        </div>
-        <div>
-          <div class="panel"><h4>Tournaments</h4><div class="body" id="tourns"><div class="empty">Loading…</div></div></div>
           <div class="panel"><h4>Join by code</h4><div class="body">
             <div style="display:flex;gap:8px"><input id="joinCode" type="text" maxlength="6" placeholder="MATCH CODE"
               style="text-transform:uppercase;letter-spacing:.24em;text-align:center">
               <button class="btn sm" id="joinGo" style="width:110px">JOIN</button></div>
             <div class="msg" id="joinMsg" style="margin:12px 0 0"></div></div></div>
+          <div class="panel"><h4>Recent matches</h4><div class="body" id="history"><div class="empty">—</div></div></div>
+          <div class="panel"><h4>Tournaments</h4><div class="body" id="tourns"><div class="empty">Loading…</div></div></div>
+        </div>
+        <div class="col">
+          <div class="panel chatpanel"><h4>Lobby chat<span class="spacer"></span>
+              <span class="cnt" id="onCount">0 online</span></h4>
+            <div class="chatwrap">
+              <div class="chatlog" id="chatlog"><div class="empty">Connecting…</div></div>
+              <div class="chatside"><div class="sidehead">Online</div><div id="onlineList"></div></div>
+            </div>
+            <form class="chatform" id="chatForm">
+              <input id="chatIn" type="text" maxlength="300" placeholder="Say something…" autocomplete="off">
+              <button class="btn sm" type="submit" id="chatGo">SEND</button>
+            </form>
+            <div class="chaterr" id="chatErr"></div>
+          </div>
         </div>
       </div>
     </div></main>
@@ -202,12 +274,13 @@ tr:last-child td{border-bottom:0}
 <button id="leave">&lsaquo; LEAVE</button>
 <div id="modeTag"></div>
 
-<script src="app.js?v=41"></script>
+<script src="app.js?v=42"></script>
 <script>
 "use strict";
 const {API, LS, el, esc, ago, dt} = HvhApp;
 const $ = id => document.getElementById(id);
-let ME = null, POLL = null, LOBBY = null, LOBBY_POLL = null;
+let ME = null, POLL = null, LOBBY = null, LOBBY_POLL = null, CHAT_POLL = null, CHAT_SINCE = 0;
+let CHAT_BUSY = false, CHAT_SEEN = new Set();
 
 /* ---------------- auth screen ---------------- */
 let mode = 'login';
@@ -253,6 +326,7 @@ $('authForm').onsubmit = async (e) => {
 };
 
 $('offBtn').onclick = () => launch(true);
+$('aOffline').onclick = () => launch(true);
 
 $('apiUrl').value = API.base;
 $('apiUrl').onchange = () => { API.setBase($('apiUrl').value); probe(); };
@@ -287,6 +361,7 @@ async function enterMenu(){
   }
   show('menu');
   tick();
+  chatStart();
   clearInterval(POLL); POLL = setInterval(tick, 8000);
   loadLobbies(); loadTournaments();
 }
@@ -425,6 +500,7 @@ function launch(offline, m){
   tag.style.color = offline ? 'var(--y)' : 'var(--g)';
   tag.style.borderColor = offline ? '#6b5420' : '#375e19';
   tag.style.background = offline ? '#2a211288' : '#18221088';
+  clearInterval(CHAT_POLL); CHAT_POLL = null;
   g.addEventListener('load', () => { try { g.contentWindow.focus(); } catch (e) {} }, { once: true });
 }
 function endGame(){
@@ -432,7 +508,7 @@ function endGame(){
   try { document.exitPointerLock(); } catch (e) {}
   g.src = 'about:blank'; g.style.display = 'none';
   $('leave').style.display = 'none'; $('modeTag').style.display = 'none';
-  if (API.token) API.post('/api/match/leave').catch(() => {});
+  if (API.token) { API.post('/api/match/leave').catch(() => {}); chatStart(); }
 }
 $('leave').onclick = endGame;
 
@@ -449,7 +525,7 @@ function modal(title, body, keep){
 function closeModal(){ if (OV) { OV.remove(); OV = null; } }
 const alertBox = t => modal('Heads up', el('p', { style: 'margin:0' }, t));
 
-$('outBtn').onclick = () => { clearInterval(POLL); API.logout(); show('auth'); setMode('login'); note('Signed out.', 'info'); };
+$('outBtn').onclick = () => { clearInterval(POLL); clearInterval(CHAT_POLL); API.logout(); show('auth'); setMode('login'); note('Signed out.', 'info'); };
 
 $('inboxBtn').onclick = async () => {
   modal('Inbox', el('div', { class: 'empty' }, 'Loading…'));
@@ -484,6 +560,64 @@ $('setBtn').onclick = () => {
     } }, 'Update password'),
     el('div', { class: 'srv' }, el('label', {}, 'Game server'),
       el('div', { style: 'color:var(--m)' }, API.base))));
+};
+
+
+/* ---------------- lobby chat ---------------- */
+function chatStart(){
+  clearInterval(CHAT_POLL);
+  CHAT_SINCE = 0; CHAT_SEEN = new Set(); CHAT_BUSY = false;
+  $('chatlog').replaceChildren(el('div', { class: 'empty' }, 'Connecting…'));
+  chatPoll();
+  CHAT_POLL = setInterval(chatPoll, 3000);
+}
+async function chatPoll(){
+  if (CHAT_BUSY) return;          /* a send and the interval can land together */
+  CHAT_BUSY = true;
+  try {
+    const r = await API.get('/api/chat?since=' + CHAT_SINCE);
+    const log = $('chatlog');
+    if (!CHAT_SINCE) log.replaceChildren();
+    if (!r.messages.length && !log.childElementCount)
+      log.replaceChildren(el('div', { class: 'empty' }, 'Nobody has said anything yet.'));
+    /* only glue to the bottom if the reader was already there */
+    const atEnd = log.scrollHeight - log.scrollTop - log.clientHeight < 40;
+    for (const m of r.messages){
+      CHAT_SINCE = Math.max(CHAT_SINCE, m.id);
+      if (CHAT_SEEN.has(m.id)) continue;
+      CHAT_SEEN.add(m.id);
+      if (log.firstElementChild && log.firstElementChild.classList.contains('empty')) log.replaceChildren();
+      log.append(chatLine(m));
+    }
+    if (CHAT_SEEN.size > 400) CHAT_SEEN = new Set([...CHAT_SEEN].slice(-200));
+    while (log.childElementCount > 120) log.firstElementChild.remove();
+    if (atEnd) log.scrollTop = log.scrollHeight;
+    renderOnline(r.online);
+  } catch (e) { /* a dropped poll is not worth shouting about; the next one retries */ }
+  finally { CHAT_BUSY = false; }
+}
+function chatLine(m){
+  const mine = ME && m.uid === ME.user.uid;
+  return el('div', { class: 'cm' + (m.owner ? ' own' : '') + (mine ? ' me' : ''), title: dt(m.created) },
+    el('span', { class: 'uidb' }, String(m.uid)),
+    el('span', { class: 'nm' }, m.username),
+    el('span', { class: 'tx' }, m.body));
+}
+function renderOnline(list){
+  $('onCount').textContent = list.length + ' online';
+  $('onlineList').replaceChildren(...(list.length
+    ? list.map(u => el('div', { class: 'ou' + (u.owner ? ' own' : ''), title: 'UID ' + u.uid },
+        el('i', {}), el('span', {}, u.username)))
+    : [el('div', { class: 'empty', style: 'font-size:12px' }, 'nobody')]));
+}
+$('chatForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const i = $('chatIn'), text = i.value.trim();
+  if (!text) return;
+  $('chatErr').textContent = '';
+  i.value = '';
+  try { await API.post('/api/chat/send', { body: text }); await chatPoll(); }
+  catch (err) { $('chatErr').textContent = err.message; i.value = text; }
 };
 
 /* ---------------- tournaments ---------------- */

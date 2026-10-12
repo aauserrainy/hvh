@@ -347,6 +347,58 @@ function build(ctx) {
     return ok();
   };
 
+  /* ============ LOBBY CHAT ============ */
+
+  const CHAT_KEEP = 300;        /* rows retained */
+  const ONLINE_WINDOW = 75e3;   /* counted as present if seen this recently */
+
+  function onlineUsers() {
+    return db.prepare(
+      `SELECT uid, username, last_seen FROM users WHERE last_seen > ? AND banned = 0
+        ORDER BY username COLLATE NOCASE LIMIT 100`).all(now() - ONLINE_WINDOW)
+      .map(u => ({ uid: u.uid, username: u.username, owner: u.uid === ownerUid() }));
+  }
+
+  R['GET /api/chat'] = (req) => {
+    const a = needAuth(req); if (!a) return err(401, 'Not signed in');
+    const since = U.toInt(req.query.since, 0);
+    const rows = db.prepare(
+      `SELECT c.id, c.uid, c.body, c.created, u.username
+         FROM chat c JOIN users u ON u.uid = c.uid
+        WHERE c.id > ? AND c.hidden = 0
+        ORDER BY c.id DESC LIMIT 60`).all(since).reverse();
+    const own = ownerUid();
+    return ok({ messages: rows.map(m => ({ ...m, owner: m.uid === own })), online: onlineUsers() });
+  };
+
+  R['POST /api/chat/send'] = (req) => {
+    const a = needAuth(req); if (!a) return err(401, 'Not signed in');
+    if (a.user.banned) return err(403, 'This account is banned.');
+    const body = U.clampStr(req.body.body, 300);
+    if (!body) return err(400, 'Say something first');
+    const wait = limiter.take('chat:' + a.user.uid, 12, 20e3);
+    if (wait) return err(429, 'You are sending messages too quickly');
+    const info = db.prepare('INSERT INTO chat(uid, body, created) VALUES(?,?,?)').run(a.user.uid, body, now());
+    /* keep the table small - this is a live chat, not an archive */
+    db.prepare('DELETE FROM chat WHERE id <= (SELECT MAX(id) FROM chat) - ?').run(CHAT_KEEP);
+    return ok({ id: Number(info.lastInsertRowid) });
+  };
+
+  R['POST /api/admin/chat/hide'] = (req) => {
+    const g = needOwner(req); if (g.e) return g.e;
+    const id = U.toInt(req.body.id, 0);
+    db.prepare('UPDATE chat SET hidden = 1 WHERE id = ?').run(id);
+    audit(g.a.user.uid, 'chat_hide', id, null);
+    return ok();
+  };
+
+  R['POST /api/admin/chat/clear'] = (req) => {
+    const g = needOwner(req); if (g.e) return g.e;
+    db.prepare('UPDATE chat SET hidden = 1 WHERE hidden = 0').run();
+    audit(g.a.user.uid, 'chat_clear', null, null);
+    return ok();
+  };
+
   /* ============ INBOX ============ */
 
   R['GET /api/inbox'] = (req) => {
