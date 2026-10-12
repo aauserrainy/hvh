@@ -94,8 +94,13 @@ API on `http://`, so a plain-HTTP backend will not work with a site on GitHub Pa
 
 If the backend serves the files too, nothing to do.
 
-Otherwise open the site and put the backend address in the **Game server** box on the
-sign-in card. It is saved in the browser. You can also link people straight to it:
+Otherwise the client already defaults to the deployed backend
+(`https://hvh-production-bc71.up.railway.app`, set as `DEFAULT_API` in `app.js`), so
+there is nothing for a player to configure. If you move the backend, change that one
+constant.
+
+To override it for a single browser, put the address in the **Game server** box on the
+sign-in card. You can also link straight to it:
 
 ```
 https://comefly.xyz/hvh/?api=https://your-backend.example.com
