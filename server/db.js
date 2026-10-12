@@ -178,7 +178,17 @@ const MIGRATIONS = [
      kind     TEXT NOT NULL,
      detail   TEXT
    );
-   CREATE INDEX idx_rep_about ON reports(about_uid);`
+   CREATE INDEX idx_rep_about ON reports(about_uid);`,
+
+  // 6 - lobby chat
+  `CREATE TABLE chat(
+     id      INTEGER PRIMARY KEY AUTOINCREMENT,
+     uid     INTEGER NOT NULL,
+     body    TEXT NOT NULL,
+     created INTEGER NOT NULL,
+     hidden  INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE INDEX idx_chat_created ON chat(created);`
 ];
 
 function open(file) {

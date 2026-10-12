@@ -1,0 +1,15 @@
+# the database: account records, password hashes, connection addresses, audit log.
+# never commit this.
+server/data/
+*.db
+*.db-wal
+*.db-shm
+
+# secrets and local config
+.env
+.env.*
+!.env.example
+
+node_modules/
+npm-debug.log*
+.DS_Store

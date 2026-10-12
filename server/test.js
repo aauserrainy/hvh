@@ -273,6 +273,42 @@ const get = (p, o) => call('GET', p, o);
   const dmDeny = await post('/api/admin/message', { token: PT, ip: '10.0.0.2', body: { uid: 1, subject: 'x', body: 'y' } });
   check('a normal player cannot send announcements', dmDeny.status === 403, dmDeny);
 
+  /* ---------- lobby chat ---------- */
+  const say = await post('/api/chat/send', { token: PT, body: { body: 'hello everyone' }, ip: '10.0.0.2' });
+  check('a signed-in player can post to chat', say.ok, say);
+  const anonChat = await post('/api/chat/send', { body: { body: 'hi' }, ip: '10.0.0.99' });
+  check('an anonymous visitor cannot post to chat', anonChat.status === 401, anonChat);
+  const emptyChat = await post('/api/chat/send', { token: PT, body: { body: '   ' }, ip: '10.0.0.2' });
+  check('an empty chat message is rejected', emptyChat.status === 400, emptyChat);
+  await post('/api/chat/send', { token: OT, body: { body: 'owner speaking' }, ip: '10.0.0.1' });
+  const feed = await get('/api/chat?since=0', { token: PT, ip: '10.0.0.2' });
+  check('chat returns recent messages oldest first', feed.ok && feed.messages.length >= 2 &&
+    feed.messages[feed.messages.length - 1].body === 'owner speaking', feed.messages?.map(m => m.body));
+  check('chat marks which message came from the owner',
+    feed.messages.find(m => m.body === 'owner speaking').owner === true &&
+    feed.messages.find(m => m.body === 'hello everyone').owner === false, feed.messages?.map(m => [m.username, m.owner]));
+  check('chat carries the UID of each speaker', feed.messages.every(m => typeof m.uid === 'number'), feed.messages?.[0]);
+  check('chat reports who is online', Array.isArray(feed.online) && feed.online.some(u => u.uid === 1), feed.online);
+  const longMsg = await post('/api/chat/send', { token: PT, body: { body: 'x'.repeat(5000) }, ip: '10.0.0.2' });
+  const feed2 = await get('/api/chat?since=0', { token: PT, ip: '10.0.0.2' });
+  check('an over-long chat message is truncated, not rejected',
+    longMsg.ok && feed2.messages.some(m => m.body.length === 300), feed2.messages?.map(m => m.body.length));
+  let chatLimited = false;
+  for (let i = 0; i < 16; i++) {
+    const r = await post('/api/chat/send', { token: PT, body: { body: 'spam ' + i }, ip: '10.0.0.2' });
+    if (r.status === 429) { chatLimited = true; break; }
+  }
+  check('chat flooding is rate limited', chatLimited);
+  const sinceFeed = await get('/api/chat?since=' + feed2.messages[feed2.messages.length - 1].id, { token: OT, ip: '10.0.0.1' });
+  check('chat can be polled incrementally', sinceFeed.ok && sinceFeed.messages.every(m => m.id > feed2.messages[feed2.messages.length - 1].id), sinceFeed.messages?.length);
+  const hideDeny = await post('/api/admin/chat/hide', { token: PT, body: { id: feed.messages[0].id }, ip: '10.0.0.2' });
+  check('a normal player cannot hide a chat message', hideDeny.status === 403, hideDeny);
+  await post('/api/admin/chat/hide', { token: OT, body: { id: feed.messages[0].id }, ip: '10.0.0.1' });
+  const afterHide = await get('/api/chat?since=0', { token: PT, ip: '10.0.0.2' });
+  check('the owner can hide a chat message', !afterHide.messages.some(m => m.id === feed.messages[0].id), afterHide.messages?.length);
+  const bannedChat = await post('/api/chat/send', { token: vt, body: { body: 'let me in' }, ip: '203.0.113.7' });
+  check('a banned account cannot post to chat', bannedChat.status === 403 || bannedChat.status === 401, bannedChat);
+
   /* ---------- audit ---------- */
   const audit = await get('/api/admin/audit', { token: OT, ip: '10.0.0.1' });
   const actions = audit.entries.map(e => e.action);
