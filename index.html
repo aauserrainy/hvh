@@ -1,31 +1,579 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>HvH Sandbox</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>HvH</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
-:root{--bg:#0d0e10;--p:#16181b;--l:#2a2d33;--t:#d4d6d9;--m:#8a8f97;--a:#9fca2b;box-sizing:border-box}
-@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#0d0e10}}
-*{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--t);font:14px Tahoma,Verdana,sans-serif}
-#home{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:calc(20px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px));background:radial-gradient(900px 500px at 50% 0,#1e2530,var(--bg))}
-h1{margin:0;font-size:28px;letter-spacing:.18em;font-weight:700}h1 span{color:var(--a)}
-.bar{height:2px;width:min(520px,80vw);background:linear-gradient(90deg,#9fca2b,#34c4e5,#a057e8,#ff8a3d)}
-.cards{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
-.card{width:min(300px,88vw);background:var(--p);border:1px solid var(--l);padding:20px;cursor:pointer;transition:.15s;text-align:left;color:inherit;font:inherit}
-.card:hover{border-color:var(--c);transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.5),0 0 0 1px var(--c) inset}
-.card h2{margin:0 0 4px;font-size:20px;color:var(--c)}.card small{color:var(--m)}.card ul{margin:14px 0 0;padding-left:16px;color:#b9bdc3;line-height:1.7;font-size:12.5px}
-.card b{display:block;margin-top:16px;color:var(--c);letter-spacing:.1em;font-size:12px}
-#back{position:fixed;left:calc(8px + env(safe-area-inset-left,0px));top:calc(8px + env(safe-area-inset-top,0px));z-index:99;display:none;background:rgba(10,11,13,.7);color:#cfd2d6;border:1px solid #333;padding:4px 9px;font:11px Tahoma;cursor:pointer;opacity:.55}#back:hover{opacity:1}
-#g{position:fixed;inset:0;width:100%;height:100%;border:0;display:none;background:#000}
-</style></head><body>
-<div id="home"><h1>HvH <span>SANDBOX</span></h1><div class="bar"></div>
-<div class="cards">
-<button class="card" style="--c:#ff8a3d" onclick="play(0)"><h2>Rust HvH</h2><small>Tiny 1v15 airfield arena</small><ul><li>Silent aim, aimlock, manipulation</li><li>Bow that never misses</li><li>AK-47 / MP5, headshot sounds</li><li>Bots see you, hear shots, respawn instantly</li><li>Online 1v1: ONLINE button in game</li></ul><b>PLAY &rsaquo;</b></button>
-<button class="card" style="--c:#3f84e8" onclick="play(1)"><h2>CS:GO HvH</h2><small>Your original sandbox</small><ul><li>Ragebot, anti-aim, desync</li><li>Resolver, fake lag</li><li>AK-47, M4A, AWP, Scout, Deagle</li><li>Unchanged from your file</li><li>Online 1v1: ONLINE button in game</li></ul><b>PLAY &rsaquo;</b></button>
-</div><small style="color:var(--m)">Esc releases the mouse &middot; the Menu button (top-left) returns here</small></div>
-<button id="back" onclick="home()">&lsaquo; Menu</button>
-<script>
-const GAMES=['rust.html?v=34','csgo.html?v=34'];let fr=null;
-function play(i){fr=document.createElement('iframe');fr.id='g';fr.allow='autoplay; fullscreen; pointer-lock; clipboard-write';fr.style.display='block';fr.src=GAMES[i];document.body.appendChild(fr);$h.style.display='none';back.style.display='block';fr.addEventListener('load',()=>{try{fr.contentWindow.focus()}catch(e){}})}
-function home(){try{document.exitPointerLock()}catch(e){}if(fr){fr.remove();fr=null}back.style.display='none';$h.style.display='flex'}
-const $h=document.getElementById('home');
+:root{--bg:#0b0c0e;--p:#131519;--p2:#181b20;--l:#272b32;--t:#dfe3e8;--m:#878f9b;--a:#4d8df0;--g:#8fe03a;--r:#ff5468;--y:#ffc04d;
+ --sp:16px;--rad:10px;box-sizing:border-box}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--t);
+ font:14px/1.5 "Inter",Segoe UI,Tahoma,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--a)}
+.hide{display:none!important}
+#bg{position:fixed;inset:0;z-index:0;background:
+ radial-gradient(1100px 620px at 50% -10%,#1d2735,transparent 70%),
+ radial-gradient(800px 500px at 88% 105%,#1a2130,transparent 70%),var(--bg)}
+#bg:after{content:"";position:absolute;inset:0;opacity:.35;
+ background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);
+ background-size:52px 52px;mask-image:radial-gradient(70% 60% at 50% 40%,#000 30%,transparent 100%)}
+.wrap{position:relative;z-index:1;height:100%;overflow:auto;display:flex;flex-direction:column}
+.bar{height:2px;background:linear-gradient(90deg,#9fca2b,#34c4e5,#a057e8,#ff8a3d)}
 
-const _q=new URLSearchParams(location.search);if(_q.get('game')!==null)play(+_q.get('game'));
-</script></body></html>
+/* ---------- auth ---------- */
+#auth{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:min(420px,100%);background:linear-gradient(180deg,#15181d,#101216);border:1px solid var(--l);
+ border-radius:14px;box-shadow:0 30px 80px #0009;overflow:hidden}
+.card .bar{margin:0}
+.card .pad{padding:26px 26px 22px}
+h1{margin:0;font-size:26px;letter-spacing:.14em;font-weight:800}
+h1 span{color:var(--g)}
+.sub{color:var(--m);margin:6px 0 20px;font-size:13px}
+label{display:block;font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--m);margin:0 0 6px}
+.f{margin-bottom:14px}
+input[type=text],input[type=password],input[type=search],select,textarea{width:100%;padding:11px 12px;background:#0c0e11;
+ border:1px solid #2b3039;border-radius:8px;outline:0;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--a);box-shadow:0 0 0 3px #4d8df022}
+input.bad{border-color:var(--r);box-shadow:0 0 0 3px #ff546822}
+.btn{display:block;width:100%;padding:12px;border:1px solid #2f5fa8;border-radius:8px;
+ background:linear-gradient(180deg,#2f6fd4,#2459ad);color:#fff;font-weight:700;letter-spacing:.06em;
+ transition:filter .15s,transform .08s}
+.btn:hover{filter:brightness(1.12)}.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.55;cursor:default;filter:none}
+.btn.ghost{background:#171a1f;border-color:var(--l);color:var(--t)}
+.btn.danger{background:linear-gradient(180deg,#b23140,#8e2532);border-color:#9c2b38}
+.btn.sm{padding:7px 12px;width:auto;display:inline-block;font-size:12px}
+.swap{margin-top:16px;text-align:center;color:var(--m);font-size:13px}
+.swap b{color:var(--a);cursor:pointer}
+.msg{margin:0 0 14px;padding:10px 12px;border-radius:8px;font-size:13px;display:none}
+.msg.err{display:block;background:#2a1418;border:1px solid #5d2730;color:#ffb3bd}
+.msg.ok{display:block;background:#15240f;border:1px solid #2f5a1c;color:#cdf0a6}
+.msg.info{display:block;background:#101c2c;border:1px solid #244163;color:#bcd9ff}
+.srv{margin-top:18px;padding-top:14px;border-top:1px solid var(--l);font-size:12px;color:var(--m)}
+.srv input{margin-top:6px;font-size:12px;padding:8px 10px}
+
+/* ---------- menu ---------- */
+#menu{flex:1;display:flex;flex-direction:column;min-height:0}
+header{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--l);background:#0e1013cc;backdrop-filter:blur(8px)}
+.logo{font-size:17px;font-weight:800;letter-spacing:.16em}
+.logo span{color:var(--g)}
+.spacer{flex:1}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;color:#07204a;
+ background:linear-gradient(145deg,#8fd2ff,#4d8df0);border:1px solid #6aa7ee}
+.who .nm{font-weight:700;line-height:1.2}
+.who .uid{font-size:11px;color:var(--m);letter-spacing:.06em}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;
+ letter-spacing:.1em;text-transform:uppercase;border:1px solid}
+.tag.owner{color:var(--y);border-color:#6b5420;background:#2a2112}
+.tag.on{color:var(--g);border-color:#375e19;background:#182210}
+.tag.off{color:var(--m);border-color:var(--l);background:#16181c}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.icon-btn{position:relative;width:34px;height:34px;border-radius:8px;border:1px solid var(--l);background:#14171b;display:grid;place-items:center}
+.icon-btn:hover{background:#1c2026;border-color:#39404a}
+.pill{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--r);
+ color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center}
+main{flex:1;overflow:auto;padding:26px 20px 40px}
+.inner{max-width:1080px;margin:0 auto}
+.acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:14px;margin-bottom:22px}
+.act{position:relative;text-align:left;padding:20px;border-radius:var(--rad);border:1px solid var(--l);
+ background:linear-gradient(180deg,#171a20,#111317);transition:.16s;overflow:hidden}
+.act:hover{transform:translateY(-3px);border-color:var(--ac,#3c4756);box-shadow:0 14px 34px #0008}
+.act:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac,var(--a))}
+.act h3{margin:0 0 5px;font-size:15px;letter-spacing:.06em}
+.act p{margin:0;color:var(--m);font-size:12.5px;line-height:1.45}
+.act .kb{position:absolute;right:14px;top:16px;font-size:10px;color:#5a6271;letter-spacing:.1em}
+.act[disabled]{opacity:.5;cursor:default;transform:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:780px){.grid2{grid-template-columns:1fr}}
+.panel{border:1px solid var(--l);border-radius:var(--rad);background:#101216;overflow:hidden;margin-bottom:14px}
+.panel>h4{margin:0;padding:11px 14px;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--m);
+ border-bottom:1px solid var(--l);background:#131519;display:flex;align-items:center;gap:8px}
+.panel>h4 .spacer{flex:1}
+.panel .body{padding:14px}
+.row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #1c1f25}
+.row:last-child{border-bottom:0}
+.row .g{flex:1;min-width:0}
+.row .t1{font-weight:600}
+.row .t2{font-size:12px;color:var(--m)}
+.empty{color:var(--m);font-size:13px;padding:8px 0}
+.foot{padding:12px 20px;border-top:1px solid var(--l);color:#5e6672;font-size:11.5px;display:flex;gap:14px;align-items:center}
+
+/* ---------- modal ---------- */
+.ov{position:fixed;inset:0;z-index:50;background:#06080bd0;backdrop-filter:blur(6px);display:grid;place-items:center;padding:20px}
+.modal{width:min(560px,100%);max-height:86vh;overflow:auto;background:#121419;border:1px solid var(--l);border-radius:12px;box-shadow:0 30px 90px #000b}
+.modal h3{margin:0;padding:14px 18px;border-bottom:1px solid var(--l);font-size:14px;letter-spacing:.08em;display:flex;align-items:center}
+.modal .mb{padding:18px}
+.x{margin-left:auto;width:26px;height:26px;border-radius:6px;border:1px solid var(--l);background:#191c22;line-height:1}
+.lob{text-align:center;padding:10px 0 4px}
+.code{font-size:38px;letter-spacing:.34em;color:var(--a);font-weight:800;margin:10px 0 4px;text-shadow:0 0 26px #4d8df055}
+.slots{display:flex;gap:8px;justify-content:center;margin:16px 0}
+.slot{flex:1;max-width:170px;padding:12px;border-radius:8px;border:1px dashed #2f353e;color:var(--m);font-size:12.5px}
+.slot.full{border-style:solid;border-color:#2f5fa8;background:#131b28;color:var(--t)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #ffffff30;border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--m);padding:7px 10px;border-bottom:1px solid var(--l)}
+td{padding:8px 10px;border-bottom:1px solid #1a1d22}
+tr:last-child td{border-bottom:0}
+.bk{display:flex;gap:22px;overflow:auto;padding:6px 2px 12px}
+.bkr{min-width:190px}
+.bkr h5{margin:0 0 8px;font-size:10.5px;letter-spacing:.1em;color:var(--m);text-transform:uppercase}
+.bm{border:1px solid var(--l);border-radius:8px;margin-bottom:10px;overflow:hidden;background:#14171c}
+.bm div{padding:7px 10px;font-size:12.5px;display:flex;gap:8px}
+.bm div+div{border-top:1px solid #1d2026}
+.bm .w{color:var(--g);font-weight:700}
+.bm .sc{margin-left:auto;color:var(--m)}
+#game{position:fixed;inset:0;z-index:40;border:0;width:100%;height:100%;display:none;background:#000}
+#leave{position:fixed;z-index:41;left:12px;top:12px;display:none;padding:5px 11px;font-size:11px;border-radius:6px;
+ border:1px solid #333a44;background:#0d0f12cc;color:#c9ced6;letter-spacing:.08em}
+#modeTag{position:fixed;z-index:41;right:12px;top:12px;display:none;padding:5px 11px;font-size:11px;border-radius:6px;
+ border:1px solid;letter-spacing:.1em;font-weight:700}
+</style></head><body>
+<div id="bg"></div>
+<div class="wrap">
+
+  <!-- ============ AUTH ============ -->
+  <section id="auth">
+    <div class="card"><div class="bar"></div><div class="pad">
+      <h1>HvH <span>CLIENT</span></h1>
+      <p class="sub" id="authSub">Sign in to play online.</p>
+      <div class="msg" id="authMsg"></div>
+      <form id="authForm" autocomplete="on">
+        <div class="f"><label for="u">Username</label><input id="u" type="text" autocomplete="username" maxlength="20" spellcheck="false"></div>
+        <div class="f"><label for="p">Password</label><input id="p" type="password" autocomplete="current-password" maxlength="200"></div>
+        <div class="f hide" id="cf"><label for="c">Confirm password</label><input id="c" type="password" autocomplete="new-password" maxlength="200"></div>
+        <button class="btn" id="authGo" type="submit">SIGN IN</button>
+      </form>
+      <div class="swap" id="swap">No account? <b id="swapBtn">Create one</b></div>
+      <div class="swap" style="margin-top:8px"><b id="offBtn">Play offline instead</b></div>
+      <div class="srv">
+        <label for="apiUrl">Game server</label>
+        <input id="apiUrl" type="text" spellcheck="false" placeholder="https://your-server.example.com">
+        <div style="margin-top:7px" id="srvState">—</div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ============ MENU ============ -->
+  <section id="menu" class="hide">
+    <header>
+      <div class="logo">HvH <span>CLIENT</span></div>
+      <div class="spacer"></div>
+      <button class="icon-btn" id="inboxBtn" title="Inbox">✉<span class="pill hide" id="unread">0</span></button>
+      <button class="icon-btn" id="setBtn" title="Account settings">⚙</button>
+      <div class="who">
+        <div class="av" id="av">?</div>
+        <div><div class="nm" id="nm">—</div><div class="uid" id="uid">UID —</div></div>
+      </div>
+      <span class="tag on" id="onTag"><i class="dot"></i>Online</span>
+      <span class="tag owner hide" id="ownTag">Owner</span>
+      <button class="btn ghost sm" id="outBtn">Log out</button>
+    </header>
+    <main><div class="inner">
+      <div class="acts">
+        <button class="act" style="--ac:#4d8df0" id="aQuick"><h3>JOIN OPEN ONLINE MATCH</h3><p>Find a lobby that needs a player and drop straight in.</p></button>
+        <button class="act" style="--ac:#8fe03a" id="aHost"><h3>HOST 1V1</h3><p>Open a match and send a friend the code.</p></button>
+        <button class="act" style="--ac:#ffc04d" id="aOffline"><h3>JOIN OFFLINE</h3><p>Play against bots. Every sandbox feature unlocked.</p></button>
+        <button class="act" style="--ac:#a057e8" id="aTourn"><h3>TOURNAMENTS</h3><p>Browse brackets and register a team.</p></button>
+      </div>
+      <div class="grid2">
+        <div>
+          <div class="panel"><h4>Open lobbies<span class="spacer"></span><button class="btn ghost sm" id="refLob">Refresh</button></h4>
+            <div class="body" id="lobbies"><div class="empty">Loading…</div></div></div>
+          <div class="panel"><h4>Recent matches</h4><div class="body" id="history"><div class="empty">—</div></div></div>
+        </div>
+        <div>
+          <div class="panel"><h4>Tournaments</h4><div class="body" id="tourns"><div class="empty">Loading…</div></div></div>
+          <div class="panel"><h4>Join by code</h4><div class="body">
+            <div style="display:flex;gap:8px"><input id="joinCode" type="text" maxlength="6" placeholder="MATCH CODE"
+              style="text-transform:uppercase;letter-spacing:.24em;text-align:center">
+              <button class="btn sm" id="joinGo" style="width:110px">JOIN</button></div>
+            <div class="msg" id="joinMsg" style="margin:12px 0 0"></div></div></div>
+        </div>
+      </div>
+    </div></main>
+    <footer class="foot"><span id="ver">v—</span><span class="spacer" style="flex:1"></span><span id="srvFoot"></span></footer>
+  </section>
+</div>
+
+<iframe id="game" allow="autoplay; fullscreen; pointer-lock; clipboard-write"></iframe>
+<button id="leave">&lsaquo; LEAVE</button>
+<div id="modeTag"></div>
+
+<script src="app.js?v=40"></script>
+<script>
+"use strict";
+const {API, LS, el, esc, ago, dt} = HvhApp;
+const $ = id => document.getElementById(id);
+let ME = null, POLL = null, LOBBY = null, LOBBY_POLL = null;
+
+/* ---------------- auth screen ---------------- */
+let mode = 'login';
+function setMode(m){
+  mode = m;
+  $('authSub').textContent = m === 'login' ? 'Sign in to play online.' : 'Pick a name and a password. That is all.';
+  $('cf').classList.toggle('hide', m === 'login');
+  $('authGo').textContent = m === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT';
+  $('swap').innerHTML = m === 'login' ? 'No account? <b id="swapBtn">Create one</b>' : 'Already have one? <b id="swapBtn">Sign in</b>';
+  $('swapBtn').onclick = () => setMode(m === 'login' ? 'register' : 'login');
+  $('p').setAttribute('autocomplete', m === 'login' ? 'current-password' : 'new-password');
+  note('');
+}
+function note(text, kind){
+  const n = $('authMsg');
+  n.className = 'msg' + (text ? ' ' + (kind || 'err') : '');
+  n.textContent = text || '';
+}
+function markBad(field){
+  ['u','p','c'].forEach(i => $(i).classList.remove('bad'));
+  if (field === 'username') $('u').classList.add('bad');
+  if (field === 'password') $('p').classList.add('bad');
+  if (field === 'confirm') $('c').classList.add('bad');
+}
+$('swapBtn').onclick = () => setMode('register');
+
+$('authForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const btn = $('authGo'), old = btn.textContent;
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  note('');
+  try {
+    const body = { username: $('u').value.trim(), password: $('p').value };
+    if (mode === 'register') body.confirm = $('c').value;
+    const r = await API.post(mode === 'login' ? '/api/login' : '/api/register', body);
+    API.setToken(r.token);
+    if (mode === 'register' && r.user.uid === 1) note('Account created — you are UID 1, the owner.', 'ok');
+    await enterMenu();
+  } catch (err) {
+    note(err.offline ? 'Cannot reach the game server. Check the address at the bottom of this card.' : err.message);
+    markBad(err.field);
+  } finally { btn.disabled = false; btn.textContent = old; }
+};
+
+$('offBtn').onclick = () => launch(true);
+
+$('apiUrl').value = API.base;
+$('apiUrl').onchange = () => { API.setBase($('apiUrl').value); probe(); };
+async function probe(){
+  const s = $('srvState'); s.textContent = 'checking…';
+  try {
+    const r = await fetch(API.base + '/api/health').then(x => x.json());
+    s.innerHTML = '<span style="color:var(--g)">● online</span> · v' + esc(r.version);
+  } catch (e) { s.innerHTML = '<span style="color:var(--r)">● unreachable</span> — you can still play offline'; }
+}
+
+/* ---------------- menu ---------------- */
+async function enterMenu(){
+  let me;
+  try { me = await API.refresh(); }
+  catch (e) {
+    if (e.offline) { note('Cannot reach the game server.'); return; }
+    show('auth'); note(e.message); return;
+  }
+  ME = me;
+  const u = me.user;
+  $('av').textContent = (u.username[0] || '?').toUpperCase();
+  $('nm').textContent = u.username;
+  $('uid').textContent = 'UID ' + u.uid;
+  $('ownTag').classList.toggle('hide', !u.owner);
+  $('ver').textContent = 'v' + (me.version || '—');
+  $('srvFoot').textContent = API.base.replace(/^https?:\/\//, '');
+  if (u.owner && !$('adminBtn')) {
+    const b = el('button', { class: 'act', style: '--ac:#ffc04d', id: 'adminBtn', onclick: () => location.href = 'admin.html' },
+      el('h3', {}, 'OWNER DASHBOARD'), el('p', {}, 'Users, bans, tournaments, audit log.'));
+    document.querySelector('.acts').append(b);
+  }
+  show('menu');
+  tick();
+  clearInterval(POLL); POLL = setInterval(tick, 8000);
+  loadLobbies(); loadTournaments();
+}
+function show(which){
+  $('auth').classList.toggle('hide', which !== 'auth');
+  $('menu').classList.toggle('hide', which !== 'menu');
+}
+
+async function tick(){
+  try {
+    const me = await API.refresh();
+    ME = me;
+    $('unread').textContent = me.unread;
+    $('unread').classList.toggle('hide', !me.unread);
+    $('onTag').className = 'tag on'; $('onTag').innerHTML = '<i class="dot"></i>Online';
+    if (me.kicked) {
+      closeLobby();
+      modal('Removed from the match', el('div', {},
+        el('p', { style: 'margin:0 0 6px' }, 'An administrator removed you from your match.'),
+        el('p', { class: 'row', style: 'color:var(--m)' }, me.kicked.reason || 'No reason given.')));
+      if (!$('game').style.display || $('game').style.display === 'block') endGame();
+    }
+    if (me.match && me.match.status === 'live' && LOBBY && LOBBY.id === me.match.id) startMatch(me.match);
+    else if (me.match && LOBBY && LOBBY.id === me.match.id) renderLobby(me.match);
+    renderHistory(me.match);
+  } catch (e) {
+    if (e.offline) { $('onTag').className = 'tag off'; $('onTag').innerHTML = '<i class="dot"></i>No connection'; return; }
+    if (e.status === 401 || e.status === 403) { clearInterval(POLL); show('auth'); note(e.message, 'err'); }
+  }
+}
+
+function renderHistory(cur){
+  const box = $('history');
+  box.replaceChildren(cur
+    ? el('div', { class: 'row' }, el('div', { class: 'g' },
+        el('div', { class: 't1' }, cur.mode.toUpperCase() + ' · ' + cur.status),
+        el('div', { class: 't2' }, cur.players.map(p => p.username).join(' vs ') || 'waiting')),
+        el('button', { class: 'btn ghost sm', onclick: () => { LOBBY = cur; renderLobby(cur); } }, 'Open'))
+    : el('div', { class: 'empty' }, 'No match in progress.'));
+}
+
+async function loadLobbies(){
+  const box = $('lobbies');
+  try {
+    const r = await API.get('/api/match/open');
+    box.replaceChildren(...(r.matches.length ? r.matches.map(m =>
+      el('div', { class: 'row' },
+        el('div', { class: 'g' }, el('div', { class: 't1' }, m.mode.toUpperCase() + ' · ' + m.host),
+          el('div', { class: 't2' }, m.n + '/' + m.cap + ' players · opened ' + ago(m.created))),
+        el('button', { class: 'btn sm', onclick: () => quickJoinId(m) }, 'Join'))
+    ) : [el('div', { class: 'empty' }, 'No open lobbies. Host one and send a friend the code.')]));
+  } catch (e) { box.replaceChildren(el('div', { class: 'empty' }, e.message)); }
+}
+$('refLob').onclick = loadLobbies;
+
+async function quickJoinId(m){
+  try { const r = await API.post('/api/match/quick', { mode: m.mode }); if (r.match) openLobby(r.match); else loadLobbies(); }
+  catch (e) { alertBox(e.message); }
+}
+$('aQuick').onclick = async () => {
+  const b = $('aQuick'); b.disabled = true;
+  try {
+    const r = await API.post('/api/match/quick', { mode: '1v1' });
+    if (r.match) openLobby(r.match);
+    else alertBox('No open matches right now. Host one instead and send a friend the code.');
+  } catch (e) { alertBox(e.message); } finally { b.disabled = false; }
+};
+$('aHost').onclick = async () => {
+  const b = $('aHost'); b.disabled = true;
+  try { const r = await API.post('/api/match/host', { mode: '1v1' }); openLobby(r.match); }
+  catch (e) { alertBox(e.message); } finally { b.disabled = false; }
+};
+$('joinGo').onclick = async () => {
+  const code = $('joinCode').value.trim().toUpperCase();
+  const m = $('joinMsg'); m.className = 'msg';
+  if (!code) return;
+  try { const r = await API.post('/api/match/join', { code }); openLobby(r.match); $('joinCode').value = ''; }
+  catch (e) { m.className = 'msg err'; m.textContent = e.message; }
+};
+$('joinCode').onkeydown = e => { if (e.key === 'Enter') $('joinGo').click(); };
+
+/* ---------------- lobby ---------------- */
+function openLobby(m){ LOBBY = m; renderLobby(m); clearInterval(LOBBY_POLL); LOBBY_POLL = setInterval(pollLobby, 1500); }
+function closeLobby(){ clearInterval(LOBBY_POLL); LOBBY_POLL = null; LOBBY = null; closeModal(); }
+async function pollLobby(){
+  if (!LOBBY) return;
+  try {
+    const r = await API.get('/api/match/state?id=' + encodeURIComponent(LOBBY.id));
+    LOBBY = r.match;
+    if (r.match.status === 'live') startMatch(r.match);
+    else if (r.match.status !== 'open') { closeLobby(); alertBox('That match has closed.'); }
+    else renderLobby(r.match);
+  } catch (e) { /* keep the lobby open through a brief hiccup */ }
+}
+function renderLobby(m){
+  const slots = [];
+  for (let i = 0; i < m.cap; i++){
+    const p = m.players[i];
+    slots.push(el('div', { class: 'slot' + (p ? ' full' : '') }, p ? p.username : 'waiting…'));
+  }
+  const body = el('div', { class: 'lob' },
+    m.code ? el('div', {}, el('div', { style: 'color:var(--m);font-size:11px;letter-spacing:.14em' }, 'MATCH CODE'),
+      el('div', { class: 'code' }, m.code),
+      el('button', { class: 'btn ghost sm', onclick: e => {
+          const link = location.origin + location.pathname + '?join=' + m.code;
+          navigator.clipboard?.writeText(link).catch(() => {});
+          e.target.textContent = 'Link copied';
+        } }, 'Copy invite link')) : null,
+    el('div', { class: 'slots' }, ...slots),
+    el('div', { style: 'color:var(--m);font-size:12.5px' },
+      m.players.length < m.cap ? el('span', {}, el('span', { class: 'spin' }), ' Waiting for players…') : 'Starting…'),
+    el('button', { class: 'btn ghost sm', style: 'margin:16px auto 0', onclick: async () => {
+        try { await API.post('/api/match/leave'); } catch (e) {} closeLobby();
+      } }, 'Cancel'));
+  modal(m.players.length < m.cap ? 'Waiting for players' : 'Match ready', body, true);
+}
+
+/* ---------------- launching the game ---------------- */
+function startMatch(m){
+  clearInterval(LOBBY_POLL); LOBBY_POLL = null; LOBBY = null; closeModal();
+  launch(false, m);
+}
+function launch(offline, m){
+  const g = $('game');
+  const cfg = offline
+    ? { offline: true }
+    : { offline: false, api: API.base, token: API.token, match: m.id, uid: ME.user.uid,
+        players: m.players, host: m.host === ME.user.uid };
+  sessionStorage.setItem('hvh_session_cfg', JSON.stringify(cfg));
+  g.src = 'csgo.html?v=40&mode=' + (offline ? 'offline' : 'online');
+  g.style.display = 'block';
+  $('leave').style.display = 'block';
+  const tag = $('modeTag');
+  tag.style.display = 'block';
+  tag.textContent = offline ? 'OFFLINE' : 'ONLINE · RANKED RULES';
+  tag.style.color = offline ? 'var(--y)' : 'var(--g)';
+  tag.style.borderColor = offline ? '#6b5420' : '#375e19';
+  tag.style.background = offline ? '#2a211288' : '#18221088';
+  g.addEventListener('load', () => { try { g.contentWindow.focus(); } catch (e) {} }, { once: true });
+}
+function endGame(){
+  const g = $('game');
+  try { document.exitPointerLock(); } catch (e) {}
+  g.src = 'about:blank'; g.style.display = 'none';
+  $('leave').style.display = 'none'; $('modeTag').style.display = 'none';
+  if (API.token) API.post('/api/match/leave').catch(() => {});
+}
+$('leave').onclick = endGame;
+
+/* ---------------- modal + panels ---------------- */
+let OV = null;
+function modal(title, body, keep){
+  closeModal();
+  OV = el('div', { class: 'ov', onclick: e => { if (e.target === OV && !keep) closeModal(); } },
+    el('div', { class: 'modal' },
+      el('h3', {}, title, el('button', { class: 'x', onclick: () => { if (keep) { API.post('/api/match/leave').catch(()=>{}); closeLobby(); } else closeModal(); } }, '×')),
+      el('div', { class: 'mb' }, body)));
+  document.body.append(OV);
+}
+function closeModal(){ if (OV) { OV.remove(); OV = null; } }
+const alertBox = t => modal('Heads up', el('p', { style: 'margin:0' }, t));
+
+$('outBtn').onclick = () => { clearInterval(POLL); API.logout(); show('auth'); setMode('login'); note('Signed out.', 'info'); };
+
+$('inboxBtn').onclick = async () => {
+  modal('Inbox', el('div', { class: 'empty' }, 'Loading…'));
+  try {
+    const r = await API.get('/api/inbox');
+    const body = r.messages.length ? el('div', {}, ...r.messages.map(m =>
+      el('div', { class: 'row', style: 'align-items:flex-start' }, el('div', { class: 'g' },
+        el('div', { class: 't1' }, (m.read ? '' : '● ') + m.subject,
+          m.broadcast ? el('span', { class: 'tag off', style: 'margin-left:8px' }, 'Announcement') : null),
+        el('div', { class: 't2', style: 'white-space:pre-wrap;margin-top:3px' }, m.body),
+        el('div', { class: 't2', style: 'margin-top:4px;opacity:.7' }, dt(m.created))))))
+      : el('div', { class: 'empty' }, 'No messages.');
+    modal('Inbox', body);
+    if (r.messages.some(m => !m.read))
+      API.post('/api/inbox/read', { ids: r.messages.map(m => m.id) }).then(tick).catch(() => {});
+  } catch (e) { modal('Inbox', el('div', { class: 'empty' }, e.message)); }
+};
+
+$('setBtn').onclick = () => {
+  const cur = el('input', { type: 'password', placeholder: 'Current password' });
+  const nw = el('input', { type: 'password', placeholder: 'New password' });
+  const out = el('div', { class: 'msg' });
+  modal('Account settings', el('div', {},
+    el('div', { class: 'row' }, el('div', { class: 'g' }, el('div', { class: 't1' }, ME.user.username), el('div', { class: 't2' }, 'UID ' + ME.user.uid + (ME.user.owner ? ' · owner' : '')))),
+    el('div', { class: 'f', style: 'margin-top:14px' }, el('label', {}, 'Change password'), cur),
+    el('div', { class: 'f' }, nw), out,
+    el('button', { class: 'btn', onclick: async () => {
+      out.className = 'msg';
+      try { await API.post('/api/account/password', { current: cur.value, password: nw.value });
+        out.className = 'msg ok'; out.textContent = 'Password changed. Other devices were signed out.'; cur.value = nw.value = '';
+      } catch (e) { out.className = 'msg err'; out.textContent = e.message; }
+    } }, 'Update password'),
+    el('div', { class: 'srv' }, el('label', {}, 'Game server'),
+      el('div', { style: 'color:var(--m)' }, API.base))));
+};
+
+/* ---------------- tournaments ---------------- */
+async function loadTournaments(){
+  const box = $('tourns');
+  try {
+    const r = await API.get('/api/tournaments');
+    box.replaceChildren(...(r.tournaments.length ? r.tournaments.slice(0, 6).map(t =>
+      el('div', { class: 'row' },
+        el('div', { class: 'g' }, el('div', { class: 't1' }, t.name),
+          el('div', { class: 't2' }, t.team_size + 'v' + t.team_size + ' · ' + t.team_count + '/' + t.max_teams + ' teams · ' + t.status)),
+        el('button', { class: 'btn ghost sm', onclick: () => openTournament(t.id) }, 'View'))
+    ) : [el('div', { class: 'empty' }, 'No tournaments yet.')]));
+  } catch (e) { box.replaceChildren(el('div', { class: 'empty' }, e.message)); }
+}
+$('aTourn').onclick = async () => {
+  modal('Tournaments', el('div', { class: 'empty' }, 'Loading…'));
+  try {
+    const r = await API.get('/api/tournaments');
+    modal('Tournaments', r.tournaments.length ? el('div', {}, ...r.tournaments.map(t =>
+      el('div', { class: 'row' }, el('div', { class: 'g' },
+        el('div', { class: 't1' }, t.name),
+        el('div', { class: 't2' }, t.team_size + 'v' + t.team_size + ' · ' + t.team_count + '/' + t.max_teams + ' teams · ' + t.status +
+          (t.start_at ? ' · starts ' + dt(t.start_at) : ''))),
+        el('button', { class: 'btn sm', onclick: () => openTournament(t.id) }, 'Open'))))
+      : el('div', { class: 'empty' }, 'No tournaments have been created yet.'));
+  } catch (e) { modal('Tournaments', el('div', { class: 'empty' }, e.message)); }
+};
+async function openTournament(id){
+  modal('Tournament', el('div', { class: 'empty' }, 'Loading…'));
+  try {
+    const { tournament: t } = await API.get('/api/tournament?id=' + id);
+    const rounds = {};
+    t.bracket.forEach(b => { (rounds[b.round] = rounds[b.round] || []).push(b); });
+    const nameOf = id2 => (t.teams.find(x => x.id === id2) || {}).name || (id2 ? '#' + id2 : '—');
+    const bracket = Object.keys(rounds).length ? el('div', { class: 'bk' }, ...Object.keys(rounds).sort((a, b) => a - b).map(r =>
+      el('div', { class: 'bkr' }, el('h5', {}, roundName(+r, Object.keys(rounds).length)),
+        ...rounds[r].map(b => el('div', { class: 'bm' },
+          el('div', { class: b.winner && b.winner === b.team_a ? 'w' : '' }, nameOf(b.team_a), el('span', { class: 'sc' }, b.status === 'done' ? b.score_a : '')),
+          el('div', { class: b.winner && b.winner === b.team_b ? 'w' : '' }, nameOf(b.team_b), el('span', { class: 'sc' }, b.status === 'done' ? b.score_b : ''))))))) : null;
+    const canReg = t.status === 'open' && !t.myTeam;
+    const teamInput = el('input', { type: 'text', maxlength: '32', placeholder: 'Team name' });
+    const out = el('div', { class: 'msg' });
+    modal(t.name, el('div', {},
+      el('div', { class: 't2', style: 'color:var(--m);margin-bottom:10px' },
+        t.team_size + 'v' + t.team_size + ' · best of ' + t.best_of + ' · ' + t.status + ' · ' + t.teams.length + '/' + t.max_teams + ' teams'),
+      t.descr ? el('p', { style: 'white-space:pre-wrap;margin:0 0 12px' }, t.descr) : null,
+      canReg ? el('div', {}, el('div', { style: 'display:flex;gap:8px' }, teamInput,
+          el('button', { class: 'btn sm', style: 'width:120px', onclick: async () => {
+            out.className = 'msg';
+            try { await API.post('/api/tournament/register', { id: t.id, team: teamInput.value }); openTournament(t.id); }
+            catch (e) { out.className = 'msg err'; out.textContent = e.message; }
+          } }, 'REGISTER')), out) : null,
+      t.myTeam ? el('div', { class: 'msg info', style: 'display:block' }, 'You are registered.',
+        ['open', 'draft'].includes(t.status) ? el('b', { style: 'cursor:pointer;margin-left:8px', onclick: async () => {
+          try { await API.post('/api/tournament/leave', { id: t.id }); openTournament(t.id); } catch (e) {}
+        } }, 'Withdraw') : null) : null,
+      el('h4', { style: 'margin:16px 0 6px;font-size:11px;letter-spacing:.12em;color:var(--m)' }, 'TEAMS'),
+      t.teams.length ? el('div', {}, ...t.teams.map(tm => el('div', { class: 'row' },
+        el('div', { class: 'g' }, el('div', { class: 't1' }, tm.name), el('div', { class: 't2' }, tm.members || '—')),
+        t.status === 'open' && !t.myTeam && tm.size < t.team_size
+          ? el('button', { class: 'btn ghost sm', onclick: async () => {
+              try { await API.post('/api/tournament/join-team', { team: tm.id }); openTournament(t.id); } catch (e) { alertBox(e.message); }
+            } }, 'Join') : null)))
+        : el('div', { class: 'empty' }, 'No teams registered yet.'),
+      bracket ? el('h4', { style: 'margin:16px 0 6px;font-size:11px;letter-spacing:.12em;color:var(--m)' }, 'BRACKET') : null,
+      bracket));
+  } catch (e) { modal('Tournament', el('div', { class: 'empty' }, e.message)); }
+}
+function roundName(r, total){
+  const back = total - r;
+  return back === 0 ? 'Final' : back === 1 ? 'Semi-finals' : back === 2 ? 'Quarter-finals' : 'Round ' + r;
+}
+
+/* ---------------- boot ---------------- */
+(async function boot(){
+  $('apiUrl').value = API.base;
+  probe();
+  setMode('login');
+  const join = new URLSearchParams(location.search).get('join');
+  if (API.token) {
+    try {
+      await enterMenu();
+      if (join) { $('joinCode').value = join; $('joinGo').click(); }
+      return;
+    } catch (e) {}
+  }
+  show('auth');
+  if (join) note('Sign in to join match ' + join + '.', 'info');
+})();
+window.addEventListener('message', e => { if (e.data === 'hvh-leave') endGame(); });
+</script>
+</body></html>
