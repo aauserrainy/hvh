@@ -165,6 +165,7 @@ input[type=range]{box-shadow:inset 0 1px 2px #000}.g b{font-weight:700;letter-sp
 <script src="lib/three-addons/SMAAPass.js"></script>
 <script src="lib/three-addons/GLTFLoader.js"></script>
 <script src="lib/three-addons/SkeletonUtils.js"></script>
+<script src="lib/three-addons/BufferGeometryUtils.js"></script>
 <script>
 /* ===== online ruleset =====
    Read from the session the launcher wrote. In an online match the features below
@@ -394,6 +395,26 @@ const cam=new THREE.PerspectiveCamera(90,1,.05,200);cam.rotation.order='YXZ';sc.
 const hem=new THREE.HemisphereLight(0xdce8ff,0x9c9484,.55);sc.add(hem);const sun=new THREE.DirectionalLight(0xfff6ea,.95);sun.position.set(40,70,30);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);const sh=sun.shadow.camera;sh.left=sh.bottom=-80;sh.right=sh.top=80;sh.far=220;sun.shadow.bias=-.0004;sun.shadow.normalBias=.025;ren.shadowMap.type=THREE.PCFSoftShadowMap;sc.add(sun);sc.add(sun.target);
 /* A 160-unit shadow frustum spread over the whole map wastes almost all of its
    resolution. Keep it tight and move it with the player instead. */
+/* The shadow map is a second full render of the scene. Nothing that casts a
+   shadow here moves fast enough to need it rebuilt every single frame, so
+   refresh it on a cadence instead - a straight halving (or better) of scene
+   traversals for a difference you cannot see at speed. */
+let _shTick=0;
+/* Boost FPS only helps the people who find it. If the frame rate stays poor for
+   a few seconds and it is off, say so once - once per session, never again. */
+let _lowT=0,_lowSaid=false;
+function fpsWatch(dt){
+ if(_lowSaid||S.boost)return;
+ _lowT = (dt>0&&1/dt<38) ? _lowT+dt : 0;
+ if(_lowT>5){_lowSaid=true;
+  notify('Low frame rate','Turn on Boost FPS in Visuals > Other','#ffc04d')}
+}
+function shadowCadence(){
+ const every=S.boost?0:GFX()==='Quality'?2:3;
+ if(!every){sun.castShadow=false;return}
+ sun.castShadow=true;sun.shadow.autoUpdate=false;
+ if((_shTick++%every)===0)sun.shadow.needsUpdate=true;
+}
 function trackSun(){const S_=28;const c=sun.shadow.camera;c.left=-S_;c.right=S_;c.top=S_;c.bottom=-S_;c.near=1;c.far=120;
  sun.position.set(P.x+34,58,P.z+26);sun.target.position.set(P.x,0,P.z);sun.target.updateMatrixWorld();c.updateProjectionMatrix()}
 /* warm bounce off the sand, so shadowed faces are not dead flat */
@@ -685,7 +706,7 @@ const b=new THREE.BufferGeometry();b.setAttribute('position',new THREE.Float32Bu
 const bd=new THREE.Mesh(LG.b,LM),hd=new THREE.Mesh(LG.h,LH);hd.position.y=1.63;hd.userData.head=1;g.add(bd,hd);g.userData.legs=[]}
 function resetBots(){bots.forEach(b=>{sc.remove(b.g);if(b.gh)sc.remove(b.gh)});mates.forEach(m=>{sc.remove(m.g)});mates=[];pDead=0;bots=[];const NBOT=V5()?5:S.bots;for(let i=0;i<NBOT;i++){const g=new THREE.Group(),m=bm.clone();
 const LITE=NBOT>40;const pl=rd==1?PIST:ALL;g.userData.wn=pl[Math.floor(Math.random()*pl.length)];if(LITE)liteBody(g);else body(g,0x7a2e2a,0x8f7a54,g.userData.wn);if(!LITE){const gg=gunGroup(g.userData.wn),G=g.userData.grip;gg.position.set(G.p[0],G.p[1],G.p[2]);gg.rotation.y=G.ry;g.add(gg)}
-const b={g,m,n:'Bot_'+(i+1),hp:100,dead:0,cd:Math.random(),ph:Math.random()*6,rt:0,see:0,vt:0,t:rnd(),...rnd()};g.userData.bot=b;if(!LITE){g.traverse(o=>o.castShadow=true);b.ol=mkOutline(g);b.ol.forEach(o=>o.castShadow=false)}else b.ol=[];sc.add(g);bots.push(b)}if(V5())mkMates()}
+const b={g,m,n:'Bot_'+(i+1),hp:100,dead:0,cd:Math.random(),ph:Math.random()*6,rt:0,see:0,vt:0,t:rnd(),...rnd()};g.userData.bot=b;if(!LITE){g.traverse(o=>o.castShadow=true)}b.ol=[];sc.add(g);bots.push(b)}if(V5())mkMates()}
 function mkMates(){const pl=rd==1?PIST:ALL;for(let i=0;i<4;i++){const g=new THREE.Group();g.userData.wn=pl[Math.floor(Math.random()*pl.length)];body(g,0x2f5d8a,0x8f7a54,g.userData.wn);const gg=gunGroup(g.userData.wn),G=g.userData.grip;gg.position.set(G.p[0],G.p[1],G.p[2]);gg.rotation.y=G.ry;g.add(gg);g.traverse(o=>o.castShadow=true);let x,z,k=0;do{x=MXf(1685)+(Math.random()-.5)*14;z=MZf(870)+(Math.random()-.5)*14}while(hit({x,z},.6)&&++k<60);const m={g,n:'Mate_'+(i+1),hp:100,dead:0,cd:Math.random(),ph:Math.random()*6,rt:0,lt:0,x,z,t:rnd()};g.position.set(x,0,z);sc.add(g);mates.push(m)}}
 resetBots();
 /* Assets arrive after the match has already been built, so rebuild once they
@@ -749,7 +770,58 @@ const H=[],hm=(o)=>{o.userData.head=1;H.push(o);return o};
 sp(0,-.02,0,.17,skn,HD,.93,1.1,1);
 if(CT){hm(sp(0,.01,0,.19,HLM,HD,1,.78,1.05));hm(q(0,-.03,.02,.38,.04,.34,HLM,HD));hm(q(0,.04,-.17,.26,.07,.05,gl,HD));hm(q(0,-.015,-.168,.24,.075,.03,lens,HD));hm(q(0,-.09,-.14,.2,.1,.05,BAL,HD));hm(q(-.18,-.05,0,.025,.12,.1,metal,HD));hm(q(.18,-.05,0,.025,.12,.1,metal,HD));hm(q(0,.13,0,.05,.03,.2,metal,HD))}
 else{hm(sp(0,-.02,0,.18,BAL,HD,.97,1.12,1.02));hm(q(0,.005,-.165,.25,.055,.03,skn,HD));hm(q(0,.005,-.185,.19,.02,.01,gl,HD));hm(sp(0,.07,0,.185,M(0x1a1a1c,0,.95,fab(0x1a1a1c,0x2f2f33,0)),HD,1,.55,1.02));hm(q(0,-.05,-.18,.04,.05,.03,skn,HD))}
-hm(q(-.17,-.02,0,.02,.06,.05,skn,HD));hm(q(.17,-.02,0,.02,.06,.05,skn,HD))}
+hm(q(-.17,-.02,0,.02,.06,.05,skn,HD));hm(q(.17,-.02,0,.02,.06,.05,skn,HD))
+mergeStatics(g);mergeStatics(HD);g.userData.legs.forEach(mergeStatics);
+/* a leg's pieces are rigid relative to each other - the whole group rotates -
+   so they merge too */
+/* every mesh in HD is part of the head, so tag after merging rather than
+   hoping the right piece happened to be first in the merge list */
+HD.traverse(o=>{if(o.isMesh)o.userData.head=1});}
+/* A character was built from ~70 separate little meshes, and with five bots in
+   a match that was 772 of the scene's 1604 meshes - about half the draw calls
+   went on bodies. The parts never move relative to each other, so bake every
+   run of same-material pieces into one geometry. Anything that animates is a
+   Group (the legs, the head, the weapon) and is skipped, so posing still works,
+   and merging preserves world positions so raycast hit detection is unchanged.
+   `userData.head` lives on the head group, which is never merged away. */
+/* The glow outline is a second copy of the whole body - 46 meshes per bot once
+   the body itself is merged, and it was being built for every bot at spawn even
+   though the setting defaults to off. Build it the first time the glow is
+   actually switched on, and keep it afterwards. */
+function olSet(b){
+ /* Boost suppresses the outline: it is a whole second copy of the body, and on
+    five bots that is ~230 extra meshes for a cosmetic edge. */
+ const want=S.glow&&!S.boost;
+ if(want&&!b.ol.length&&!b.lite){b.ol=mkOutline(b.g);b.ol.forEach(o=>o.castShadow=false)}
+ if(b.ol.length)b.ol.forEach(o=>o.visible=want);
+}
+function mergeStatics(root){
+ const BU=THREE.BufferGeometryUtils;
+ if(!BU||!BU.mergeBufferGeometries)return;                 /* addon absent: leave as is */
+ const byMat=new Map();
+ root.children.slice().forEach(ch=>{
+  if(!ch.isMesh||ch.isInstancedMesh||ch.isSkinnedMesh)return;   /* groups stay */
+  const k=ch.material.uuid;
+  (byMat.get(k)||byMat.set(k,[]).get(k)).push(ch);
+ });
+ byMat.forEach(list=>{
+  if(list.length<2)return;
+  const geos=[];
+  list.forEach(m=>{m.updateMatrix();const gcl=m.geometry.clone();gcl.applyMatrix4(m.matrix);
+   /* merging needs identical attribute sets; drop anything not shared */
+   if(!gcl.attributes.uv)gcl.deleteAttribute('uv');
+   geos.push(gcl)});
+  let merged=null;
+  try{merged=BU.mergeBufferGeometries(geos,false)}catch(e){merged=null}
+  if(!merged){geos.forEach(x=>x.dispose());return}           /* mismatch: keep originals */
+  const mesh=new THREE.Mesh(merged,list[0].material);
+  mesh.castShadow=list[0].castShadow;mesh.receiveShadow=list[0].receiveShadow;
+  if(list[0].userData&&list[0].userData.head)mesh.userData.head=1;
+  list.forEach(m=>{root.remove(m);m.geometry.dispose()});
+  geos.forEach(x=>x.dispose());
+  root.add(mesh);
+ });
+}
 function aaPose(b,dt){const g=b.g;if(!g.userData.hg&&!g.userData.hgTried){g.userData.hgTried=1;const hs=g.children.filter(o=>o.userData&&o.userData.head);if(hs.length){const hg=new THREE.Group();hg.position.y=1.5;hs.forEach(o=>{g.remove(o);o.position.y-=1.5;hg.add(o)});g.add(hg);g.userData.hg=hg}}const hg=g.userData.hg;if(!hg)return;
 if(!(S.baa_on&&b.aa)){hg.rotation.set(0,0,0);return}
 b.apT=(b.apT||0)-dt*S.baa_spd/100;if(b.apT<=0){b.apT=.12+Math.random()*.3;b.apF=!b.apF;b.apJ=(Math.random()<.5?-1:1)}
@@ -939,7 +1011,7 @@ addEventListener('mousedown',e=>{if(locked){down=1;if(!S.rage||!S.autofire){}}})
 O.addEventListener('click',()=>{if(document.getElementById('m').style.display!='block')O.requestPointerLock()});
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement==O;document.getElementById('hint').style.display=locked?'none':'block'});
 function size(){if(composer){composer.setSize(innerWidth,innerHeight);if(smaaPass)smaaPass.setSize(innerWidth,innerHeight)}
- const w=innerWidth,h=innerHeight,d=Math.min(devicePixelRatio,GFX()=='Performance'?1:GFX()=='Balanced'?1.25:1.75);ren.setPixelRatio(d);ren.setSize(w,h,false);O.width=w;O.height=h;cam.aspect=w/h;cam.updateProjectionMatrix()}
+ const w=innerWidth,h=innerHeight,d=Math.min(devicePixelRatio,S.boost?.72:GFX()=='Performance'?1:GFX()=='Balanced'?1.25:1.75);ren.setPixelRatio(d);ren.setSize(w,h,false);O.width=w;O.height=h;cam.aspect=w/h;cam.updateProjectionMatrix()}
 addEventListener('resize',size);
 /* Ambient occlusion is what turns flat boxes into architecture: it darkens the
    creases where walls meet floors and where props sit on the ground. */
@@ -1039,7 +1111,7 @@ const hitOK=!bt&&!S.dump&&er<.23,dec=bt||(!hitOK&&S.fl&&Math.abs(lg)>.2),ap=dec?
 // aa model
 let ay=yaw;if(S.aa){ay+=dsd()*S.desync/57.3+(S.aamode=='Spin'?ts*12:S.aamode=='Jitter'?(Math.floor(ts*8)%2?1:-1)*S.aarange/57.3:Math.PI)}
 pm.visible=S.tp;pm.position.set(P.x,P.y,P.z);pm.scale.y=1-.3*(P.cr||0);pm.rotation.y=ay;pm.rotation.x=0;if(pm.userData.hg)pm.userData.hg.rotation.x=S.aa?(S.ptc=='Down'?-.85:S.ptc=='Up'?.85:0):0;pm.userData.legs.forEach((l,i)=>l.rotation.x=Math.sin(ts*9+i*3.14)*Math.min(1,Math.hypot(P.vx,P.vz)/4)*.6);pg2.visible=S.tp&&S.aa&&S.aach;{const fkS=S.aa?dsd():1;pg2.position.set(P.x+Math.cos(yaw)*FK*fkS,P.y,P.z-Math.sin(yaw)*FK*fkS);pg2.rotation.y=ay+Math.PI}pg2.scale.y=pm.scale.y;gm.visible=S.tp&&S.fl;gm.position.set(lag.x,P.y,lag.z);gm.rotation.y=ay;lbls.forEach(l=>l.visible=S.lbl);const nc=S.night?0x0a0e1a:0xbcd6ee;sc.background=S.night?NC:SKY;sc.fog.color.set(nc);sc.fog.near=S.nofog?1e4:Math.max(10,S.fogd*.35);sc.fog.far=S.nofog?1e5:S.fogd;if(S.skyc!==_skyPrev){_skyPrev=S.skyc;try{SKYD.material.uniforms.tint.value.set(S.skyc)}catch(e){}}if(S.twalls!==lastTW){lastTW=S.twalls;walls.forEach(w=>{w.material.transparent=S.twalls>0;w.material.opacity=1-S.twalls/125;w.material.needsUpdate=true})}sun.intensity=S.night?.15:.8;hem.intensity=S.night?.3:.62;
-bm.depthTest=true;GLM.color.set(S.glowcol);bots.forEach(b=>{b.ol.forEach(o=>o.visible=S.glow);b.m.color.set(S.chams?S.chamcol:'#8a2b3b');b.m.depthTest=!S.chams;b.m.transparent=S.chams;b.m.opacity=S.chams?.85:1;if(b.cs!==S.chams){b.cs=S.chams;b.g.traverse(o=>{if(o.isMesh&&!o.userData.ol){if(!o.userData.o)o.userData.o=o.material;o.material=S.chams?b.m:o.userData.o;o.renderOrder=S.chams?9:0}})}b.g.userData.legs.forEach((l,i)=>l.rotation.x=Math.sin(ts*9+i*3.14+b.ph)*.5)});
+bm.depthTest=true;GLM.color.set(S.glowcol);bots.forEach(b=>{olSet(b);b.m.color.set(S.chams?S.chamcol:'#8a2b3b');b.m.depthTest=!S.chams;b.m.transparent=S.chams;b.m.opacity=S.chams?.85:1;if(b.cs!==S.chams){b.cs=S.chams;b.g.traverse(o=>{if(o.isMesh&&!o.userData.ol){if(!o.userData.o)o.userData.o=o.material;o.material=S.chams?b.m:o.userData.o;o.renderOrder=S.chams?9:0}})}b.g.userData.legs.forEach((l,i)=>l.rotation.x=Math.sin(ts*9+i*3.14+b.ph)*.5)});
 cam.fov=S.cfov;cam.updateProjectionMatrix();const e=eye(),v=vd();cam.rotation.set(pitch,yaw,0);
 let cp=e.clone();if(S.tp){cp.sub(v.clone().multiplyScalar(S.tpd));rc.set(e,v.clone().negate());rc.far=S.tpd;const hh=rc.intersectObjects(walls);if(hh.length)cp=e.clone().sub(v.clone().multiplyScalar(Math.max(.3,hh[0].distance-.2)))}cam.position.copy(cp);
 if(vmN!=(kn?'Knife':S.weapon)){if(vm)cam.remove(vm);sc.remove(pm,gm);const wk=kn?'Knife':S.weapon;pm=mkHuman(wk);gm=mkGhost();if(pg2)sc.remove(pg2);pg2=mkAAG(pm);sc.add(pm,gm,pg2);HvhLua.emit('weapon',{name:wk});vm=wk=='Knife'?mkKnife(1):mkGun(wk);vm.position.set(.22,-.2,-.35);cam.add(vm);vmN=wk;anim('draw')}
@@ -1056,10 +1128,16 @@ kick=Math.max(0,Math.min(.07,kick-dt*.5));vm.position.z=-.35+kick;slash=Math.max
 /* player offsets ride on top of whatever the recoil and animation code just
    produced, rather than replacing it */
 vm.position.x+=S.vmx/200;vm.position.y+=S.vmy/200;vm.position.z+=S.vmz/200;vm.rotation.z=S.vmroll/120;FX.forEach(f=>{f.l-=dt;const k=Math.max(0,f.l/f.l0);f.g.traverse(o=>{if(o.isMesh)o.material.opacity=k*.6});if(f.fall){f.g.rotation.x=-Math.min(1,(1-k)*5)*1.45}});for(let i=FX.length-1;i>=0;i--)if(FX[i].l<=0){sc.remove(FX[i].g);FX.splice(i,1)}updFx(dt);tr=tr.filter(l=>{l.material.opacity=Math.max(0,l.life/l.l0)*.9;if((l.life-=dt)<=0){sc.remove(l);return false}return true});
-if(window.__cam)window.__cam(cam,P,bots);trackSun();
-/* The launch screen clears on this rather than on a timer, so it never
-   uncovers a world that has not finished building. */
-if(!window.__ready){window.__ready=1;try{parent.postMessage('hvh:ready','*')}catch(e){}}
+if(window.__cam)window.__cam(cam,P,bots);trackSun();shadowCadence();fpsWatch(dt);
+/* Ready means playable, not "a frame reached the screen". The first frame
+   renders while textures, the shadow map and the post chain are still warming,
+   so posting on frame 1 cleared the launch screen about a second in and the
+   player watched the real load happen on a half-built world. Wait for a few
+   consecutive frames so shader compiles and the first shadow pass are behind
+   us. */
+if(window.__readyN===undefined)window.__readyN=0;
+if(window.__readyN<8){window.__readyN++;}
+else if(!window.__ready){window.__ready=1;try{parent.postMessage('hvh:ready','*')}catch(e){}}
 if(composer)composer.render();else ren.render(sc,cam);
 // hud
 const w=O.width,h=O.height;X.clearRect(0,0,w,h);if(S.vig&&GFX()!='Performance')X.drawImage(VIGC,0,0,w,h);X.font='11px Verdana';
