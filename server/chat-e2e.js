@@ -71,6 +71,15 @@ ck('messages flow both ways', bSeen.includes('owner here'), bSeen.slice(0,160));
  ck('the online count is shown', /\d+ online/.test(online.count), online.count);
  ck('the owner is highlighted in the user list', online.ownerMarked===true, online);
 
+ const dc=await A.evaluate(()=>{const a=document.getElementById('aDiscord');
+   return a?{href:a.getAttribute('href'),target:a.getAttribute('target'),rel:a.getAttribute('rel'),
+     tag:a.tagName,text:a.textContent.replace(/\s+/g,' ').trim().slice(0,40),icon:!!a.querySelector('svg')}:null});
+ ck('a Join Discord tile exists', dc!==null, dc);
+ ck('it points at the right invite', dc&&dc.href==='https://discord.gg/ReVpjYhACw', dc&&dc.href);
+ ck('it opens in a new tab safely', dc&&dc.target==='_blank'&&/noopener/.test(dc.rel)&&/noreferrer/.test(dc.rel), dc&&dc.rel);
+ ck('it is a real link, not a scripted button', dc&&dc.tag==='A', dc&&dc.tag);
+ ck('it has the Discord glyph', dc&&dc.icon===true, dc);
+
  const anim=await A.evaluate(()=>{
    const t=document.querySelector('.act'), m=document.querySelector('#chatlog .cm');
    return {tile:getComputedStyle(t).animationName, line:m?getComputedStyle(m).animationName:'',
