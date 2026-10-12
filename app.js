@@ -12,11 +12,23 @@
   const qp = new URLSearchParams(location.search);
   if (qp.get('api')) LS.set('hvh_api', qp.get('api').replace(/\/+$/, ''));
 
+  /* Where the backend lives. The client is served from a static host (GitHub
+     Pages) that cannot run it, so the default points at the deployed server.
+     Overridden by the Game server box, or by ?api= on the URL. */
+  const DEFAULT_API = 'https://hvh-production-bc71.up.railway.app';
+  function defaultBase() {
+    const h = location.hostname;
+    /* served by the backend itself, or a local dev copy: talk to this origin */
+    if (h === 'localhost' || h === '127.0.0.1' || h === '' ) return location.origin;
+    try { if (h === new URL(DEFAULT_API).hostname) return location.origin; } catch (e) {}
+    return DEFAULT_API;
+  }
+
   const API = {
-    base: LS.get('hvh_api', '') || location.origin,
+    base: LS.get('hvh_api', '') || defaultBase(),
     token: LS.get('hvh_token', '') || '',
     user: null,
-    setBase(u) { API.base = String(u || '').replace(/\/+$/, '') || location.origin; LS.set('hvh_api', API.base); },
+    setBase(u) { API.base = String(u || '').replace(/\/+$/, '') || defaultBase(); LS.set('hvh_api', API.base); },
     setToken(t) { API.token = t || ''; if (t) LS.set('hvh_token', t); else LS.del('hvh_token'); },
 
     async call(method, path, body) {
