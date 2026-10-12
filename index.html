@@ -498,7 +498,7 @@ function launch(offline, m){
     : { offline: false, api: API.base, token: API.token, match: m.id, uid: ME.user.uid,
         players: m.players, host: m.host === ME.user.uid };
   sessionStorage.setItem('hvh_session_cfg', JSON.stringify(cfg));
-  g.src = 'csgo.html?v=40&mode=' + (offline ? 'offline' : 'online');
+  g.src = 'csgo.html?v=44&mode=' + (offline ? 'offline' : 'online');
   g.style.display = 'block';
   $('leave').style.display = 'block';
   const tag = $('modeTag');
