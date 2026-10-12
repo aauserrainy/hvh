@@ -49,10 +49,19 @@ const r=await p.evaluate(async()=>{
   out.repeatKills=kills-k2;
 
   // --- a sustained speed hack is still caught ---
+  // Assert on the OUTCOME, not on the raw counter. Past the strike threshold the
+  // detector reports the peer and resets the counter by design, so a run that
+  // reaches the report ends on a low count - the old assertion failed exactly
+  // when detection worked, and only passed while the 30s report cooldown
+  // happened to suppress it. Count strikes reached AND reports fired instead.
   _vStrikes=0;_vSent=0;_vHp=100;_vLast=null;
+  let reports=0; const realReport=window.reportPeer; window.reportPeer=()=>{reports++};
   validateRemote({x:0,z:0,hp:100});
-  for(let i=1;i<=20;i++){ await wait(20); validateRemote({x:i*40,z:0,hp:100}); }
-  out.strikesOnRealHack=_vStrikes;
+  let peak=0;
+  for(let i=1;i<=20;i++){ await wait(20); validateRemote({x:i*40,z:0,hp:100}); if(_vStrikes>peak)peak=_vStrikes; }
+  window.reportPeer=realReport;
+  out.strikesOnRealHack=peak;
+  out.reportsOnRealHack=reports;
 
   // --- a whole normal fight raises no strikes ---
   _vStrikes=0;_vHp=100;_vLast=null;
@@ -82,6 +91,8 @@ ck('a spawn-protected opponent cannot be killed', r.killWhileProtected===0&&r.st
 ck('once protection ends the kill registers', r.firstKill===1, r.firstKill);
 ck('the same death cannot be re-counted', r.repeatKills===0, r.repeatKills);
 ck('a sustained speed hack still accumulates strikes', r.strikesOnRealHack>10, r.strikesOnRealHack);
+ck('a sustained speed hack is reported, or is still building strikes',
+   r.reportsOnRealHack>0 || r.strikesOnRealHack>10, r);
 ck('normal play with repeated deaths raises no strikes', r.strikesOnNormalPlay===0, r.strikesOnNormalPlay);
 ck('spawn protection is advertised to the opponent', r.sentInv===1, r.sentInv);
 console.log('\n'+log.join('\n'));console.log(`\n${P} passed, ${F} failed\n`);
