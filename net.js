@@ -12,7 +12,12 @@ const $=id=>document.getElementById(id);
 
 /* ---------- CONFIG: edit these to bake a relay into the site so BOTH players get it automatically ---------- */
 const TURN_BUILTIN=[/* {urls:['turn:your.host:3478','turn:your.host:443?transport=tcp','turns:your.host:443?transport=tcp'],username:'u',credential:'p'} */];
-const METERED={app:'comefyl',key:'pk_live_7ad1c2390f898ff5a34d4b18d6bf6252ea7a06c7'};   /* free account at metered.ca -> app name + API key (20GB/mo free) */
+/* A relay (TURN) account, if you have one. Leave this EMPTY in a public repo:
+   anything here is readable by anyone who opens the page or the repository.
+   Players add their own under RELAY SETTINGS in the lobby, which is stored in
+   their browser only. To hand one relay to everybody, serve the credentials
+   from the backend to signed-in players instead of putting them here. */
+const METERED={app:'',key:''};
 const STUN=['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun.cloudflare.com:3478','stun:global.stun.twilio.com:3478','stun:stun.nextcloud.com:443'];
 const MQTT=['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt','wss://test.mosquitto.org:8081/mqtt','wss://mqtt.eclipseprojects.io/mqtt'];
 const NTFY=['https://ntfy.sh'];
