@@ -68,11 +68,32 @@ function ntfyTransport(base){
  T.send=s=>{const d=Math.max(0,last+250-Date.now());last=Math.max(Date.now(),last)+250;setTimeout(()=>{if(closed)return;try{fetch(base+'/'+topic,{method:'POST',body:s}).catch(()=>{})}catch(e){}},d)};
  T.stop=()=>{closed=true;try{es&&es.close()}catch(e){}T.up=false};
  return T}
+function platformTransport(p){
+ const T={name:'match server',up:false};let stop=false,since=0,onmsg=null,timer=null,fails=0;
+ const hdr=()=>({'content-type':'application/json',authorization:'Bearer '+p.token});
+ async function poll(){
+  if(stop)return;
+  try{
+   const r=await fetch(p.api+'/api/match/signal?match='+encodeURIComponent(p.match)+'&since='+since,{headers:hdr()});
+   const j=await r.json();
+   if(j&&j.ok){ if(!T.up){T.up=true;T.onup&&T.onup(T)} fails=0;
+    (j.msgs||[]).forEach(m=>{since=Math.max(since,m.seq);try{onmsg(JSON.stringify(m.data))}catch(e){}});
+    if(typeof j.seq==='number')since=Math.max(since,0);
+   } else fails++;
+  }catch(e){fails++;T.up=false}
+  timer=setTimeout(poll,fails>3?3000:700);
+ }
+ T.start=(topic,om,ou)=>{onmsg=om;T.onup=ou;poll()};
+ T.send=txt=>{if(stop)return;
+  fetch(p.api+'/api/match/signal',{method:'POST',headers:hdr(),body:JSON.stringify({match:p.match,data:JSON.parse(txt)})}).catch(()=>{})};
+ T.stop=()=>{stop=true;clearTimeout(timer);T.up=false};
+ return T}
 function makeSignal(){
  const S={ts:[],seen:new Set(),me:rid(),onmsg:null,onstate:null,stopped:false};
  S.start=(topic,onmsg,onstate)=>{S.onmsg=onmsg;S.onstate=onstate;
-  const mq=q.get('mqtt')?q.get('mqtt').split(','):MQTT;
-  S.ts=mq.map(mqttTransport);if(q.get('nontfy')!='1')S.ts=S.ts.concat(NTFY.map(ntfyTransport));
+  if(Net.platform){S.ts=[platformTransport(Net.platform)]}
+  else{const mq=q.get('mqtt')?q.get('mqtt').split(','):MQTT;
+   S.ts=mq.map(mqttTransport);if(q.get('nontfy')!='1')S.ts=S.ts.concat(NTFY.map(ntfyTransport))}
   S.ts.forEach(t=>t.start(topic,txt=>S.recv(txt),()=>S.onstate&&S.onstate(S)))};
  S.upNames=()=>S.ts.filter(t=>t.up).map(t=>t.name);
  S.recv=txt=>{if(S.stopped)return;let m;try{m=JSON.parse(txt)}catch(e){return}if(!m||m.from===S.me||!m.id||S.seen.has(m.id))return;S.seen.add(m.id);if(m.to&&m.to!==S.me)return;S.onmsg(m)};
@@ -176,6 +197,46 @@ const Net={ver:VER,open:false,host:false,code:'',ping:0,route:'',
   const ok=up.length&&ty&&(ty.srflx||ty.relay);
   m+='\n'+(!up.length?'-> Use MANUAL CONNECT, or disable the ad-blocker/VPN for this site.':!ok?'-> Your network blocks peer-to-peer. Add a TURN relay in RELAY SETTINGS.':ty.relay?'-> should work, even on a VPN.':'-> should work for most networks; on a VPN add a TURN relay for reliability.');
   this.status(m,!ok)},
+ /* Started by the launcher for a matchmade game: both sides already know the
+    match, so there is no code to type and no broker to name. */
+ async platformMatch(p){
+  this.platform=p;this.reset();this.host=!!p.host;
+  if(btn){btn.textContent='CONNECTING...';btn.style.borderColor='#ffc04d'}
+  this.status('Connecting to your opponent...');
+  const sig=this._sig=makeSignal();let att=null,got=false,L=null,early=[];
+  const topic=p.match;
+  if(p.host){
+   sig.start(topic,async m=>{
+    if(this.open)return;
+    if(m.k=='join'&&(!att||att.from!==m.from)){
+     if(att&&att.L){att.L.dead=true;try{att.L.pc.close()}catch(e){}}
+     const a=att={from:m.from};
+     let LL;try{LL=await this._mk(cs=>sig.send({k:'ice',to:m.from,c:cs}))}catch(e){this.status('WebRTC is not available in this browser: '+e,1);return}
+     a.L=LL;const pc=LL.pc;const r=pc.createDataChannel('r',{ordered:true}),u=pc.createDataChannel('u',{ordered:false,maxRetransmits:0});
+     this._wire(LL,r);this._wire(LL,u);
+     await pc.setLocalDescription(await pc.createOffer());
+     sig.send({k:'offer',to:m.from,sdp:{type:pc.localDescription.type,sdp:pc.localDescription.sdp}});
+     this._t(()=>{if(!this.open&&att===a)this.status(this._why(LL),1)},35000);
+    } else if(m.k=='answer'&&att&&att.L&&!att.L.haveRemote){
+     try{await att.L.pc.setRemoteDescription(m.sdp);await att.L.remoteSet()}catch(e){this.status('Handshake error: '+e,1)}
+    } else if(m.k=='ice'&&att&&att.L)att.L.addIce(m.c);
+   },()=>this.status('Waiting for your opponent...'));
+  } else {
+   sig.start(topic,async m=>{
+    if(this.open)return;
+    if(m.k=='offer'&&!got){got=true;this.status('Connecting...');
+     try{L=await this._mk(cs=>sig.send({k:'ice',c:cs}));L.addIce(early.splice(0));
+      await L.pc.setRemoteDescription(m.sdp);await L.remoteSet();
+      await L.pc.setLocalDescription(await L.pc.createAnswer());
+      sig.send({k:'answer',sdp:{type:L.pc.localDescription.type,sdp:L.pc.localDescription.sdp}});
+      this._t(()=>{if(!this.open)this.status(this._why(L),1)},35000);
+     }catch(e){this.status('Handshake error: '+e,1)}}
+    else if(m.k=='ice'){if(L)L.addIce(m.c);else early.push(...m.c)}
+   },()=>{sig.send({k:'join'})});
+   const iv=setInterval(()=>{if(got||this.open||this._sig!==sig)clearInterval(iv);else sig.send({k:'join'})},2000);
+   this._timers.push(iv);
+  }
+ },
  lobby(){if(document.pointerLockElement)document.exitPointerLock();ui.style.display='flex'}};
 
 function build(){

@@ -1,0 +1,399 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>HvH — Owner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{--bg:#0b0c0e;--p:#101216;--l:#272b32;--t:#dfe3e8;--m:#878f9b;--a:#4d8df0;--g:#8fe03a;--r:#ff5468;--y:#ffc04d;box-sizing:border-box}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--t);font:13.5px/1.5 Inter,Segoe UI,Tahoma,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
+.hide{display:none!important}
+#shell{display:grid;grid-template-columns:208px 1fr;height:100%}
+nav{border-right:1px solid var(--l);background:#0e1013;padding:14px 10px;overflow:auto}
+.brand{font-weight:800;letter-spacing:.14em;font-size:14px;padding:6px 10px 16px}
+.brand span{color:var(--y)}
+nav button{display:block;width:100%;text-align:left;padding:9px 11px;margin-bottom:3px;border:1px solid transparent;
+ border-radius:7px;background:transparent;color:#aeb6c2;font-size:13px}
+nav button:hover{background:#171a1f;color:var(--t)}
+nav button.on{background:#182334;border-color:#2b4668;color:#fff}
+nav .sep{margin:14px 10px 6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#5b6472}
+main{overflow:auto;padding:20px 22px 48px}
+h2{margin:0 0 4px;font-size:19px;letter-spacing:.04em}
+.sub{color:var(--m);margin:0 0 18px;font-size:12.5px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.kpi{border:1px solid var(--l);border-radius:10px;background:var(--p);padding:14px}
+.kpi b{display:block;font-size:25px;font-weight:800;letter-spacing:-.01em}
+.kpi span{color:var(--m);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.panel{border:1px solid var(--l);border-radius:10px;background:var(--p);margin-bottom:16px;overflow:hidden}
+.panel>h3{margin:0;padding:11px 14px;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--m);
+ border-bottom:1px solid var(--l);background:#131519;display:flex;align-items:center;gap:8px}
+.panel .body{padding:13px 14px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--m);padding:8px 10px;border-bottom:1px solid var(--l);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #1a1d22;vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:#14171c}
+input,select,textarea{padding:8px 10px;background:#0c0e11;border:1px solid #2b3039;border-radius:7px;outline:0;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--a);box-shadow:0 0 0 3px #4d8df022}
+.btn{padding:7px 12px;border:1px solid #2f5fa8;border-radius:7px;background:linear-gradient(180deg,#2f6fd4,#2459ad);color:#fff;font-weight:600;font-size:12.5px}
+.btn:hover{filter:brightness(1.12)}
+.btn.ghost{background:#171a1f;border-color:var(--l);color:var(--t)}
+.btn.danger{background:linear-gradient(180deg,#b23140,#8e2532);border-color:#9c2b38}
+.btn.warn{background:linear-gradient(180deg,#9a6a1c,#7a5414);border-color:#8a5f18}
+.btn.sm{padding:4px 9px;font-size:11.5px}
+.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.f{margin-bottom:11px}
+label{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--m);margin-bottom:5px}
+.tag{display:inline-block;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:1px solid}
+.tag.ok{color:var(--g);border-color:#375e19;background:#182210}
+.tag.bad{color:var(--r);border-color:#5d2730;background:#2a1418}
+.tag.own{color:var(--y);border-color:#6b5420;background:#2a2112}
+.tag.mut{color:var(--m);border-color:var(--l);background:#16181c}
+.msg{padding:9px 11px;border-radius:7px;font-size:12.5px;margin:10px 0;display:none}
+.msg.err{display:block;background:#2a1418;border:1px solid #5d2730;color:#ffb3bd}
+.msg.ok{display:block;background:#15240f;border:1px solid #2f5a1c;color:#cdf0a6}
+.msg.warn{display:block;background:#2a2112;border:1px solid #6b5420;color:#ffe0a3}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.ov{position:fixed;inset:0;z-index:50;background:#06080bd0;backdrop-filter:blur(5px);display:grid;place-items:center;padding:18px}
+.modal{width:min(680px,100%);max-height:88vh;overflow:auto;background:#121419;border:1px solid var(--l);border-radius:11px}
+.modal h3{margin:0;padding:13px 16px;border-bottom:1px solid var(--l);font-size:13.5px;display:flex;align-items:center}
+.modal .mb{padding:16px}
+.x{margin-left:auto;width:25px;height:25px;border-radius:6px;border:1px solid var(--l);background:#191c22;line-height:1}
+.empty{color:var(--m);padding:10px 0;font-size:12.5px}
+.note{font-size:11.5px;color:var(--m);line-height:1.5;margin:8px 0 0}
+@media(max-width:760px){#shell{grid-template-columns:1fr}nav{display:flex;gap:6px;overflow-x:auto;border-right:0;border-bottom:1px solid var(--l)}nav button{width:auto;white-space:nowrap}.brand,.sep{display:none}}
+</style></head><body>
+<div id="shell">
+  <nav>
+    <div class="brand">HvH <span>OWNER</span></div>
+    <button data-v="overview" class="on">Overview</button>
+    <button data-v="users">Users</button>
+    <button data-v="matches">Matches</button>
+    <div class="sep">Moderation</div>
+    <button data-v="ipbans">IP bans</button>
+    <button data-v="reports">Reports</button>
+    <button data-v="audit">Audit log</button>
+    <div class="sep">Platform</div>
+    <button data-v="tournaments">Tournaments</button>
+    <button data-v="messages">Messages</button>
+    <div class="sep"></div>
+    <button id="backBtn">&lsaquo; Back to game</button>
+  </nav>
+  <main id="main"><div class="empty">Loading…</div></main>
+</div>
+<script src="app.js?v=40"></script>
+<script>
+"use strict";
+const {API, el, esc, ago, dt} = HvhApp;
+const $ = id => document.getElementById(id);
+const M = $('main');
+let VIEW = 'overview', TIMER = null;
+
+document.querySelectorAll('nav button[data-v]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button[data-v]').forEach(x => x.classList.toggle('on', x === b));
+  VIEW = b.dataset.v; render();
+});
+$('backBtn').onclick = () => location.href = 'index.html';
+
+function panel(title, body, ...head){ return el('div', { class: 'panel' }, el('h3', {}, title, el('span', { style: 'flex:1' }), ...head), el('div', { class: 'body' }, body)); }
+function table(cols, rows){
+  return el('table', {}, el('thead', {}, el('tr', {}, ...cols.map(c => el('th', {}, c)))),
+    el('tbody', {}, ...(rows.length ? rows : [el('tr', {}, el('td', { colspan: cols.length }, el('div', { class: 'empty' }, 'Nothing here yet.')))])));
+}
+let OV = null;
+function modal(title, body){
+  closeModal();
+  OV = el('div', { class: 'ov', onclick: e => { if (e.target === OV) closeModal(); } },
+    el('div', { class: 'modal' }, el('h3', {}, title, el('button', { class: 'x', onclick: closeModal }, '×')), el('div', { class: 'mb' }, body)));
+  document.body.append(OV);
+}
+function closeModal(){ if (OV) { OV.remove(); OV = null; } }
+function fail(e){ M.replaceChildren(el('div', { class: 'msg err', style: 'display:block' }, e.message)); }
+
+async function render(){
+  clearInterval(TIMER);
+  try { await VIEWS[VIEW](); } catch (e) {
+    if (e.status === 403) { M.replaceChildren(el('div', { class: 'msg err', style: 'display:block' },
+      'This dashboard is for the owner account only.'), el('button', { class: 'btn', onclick: () => location.href = 'index.html' }, 'Back to the game')); return; }
+    if (e.status === 401) { location.href = 'index.html'; return; }
+    fail(e);
+  }
+}
+
+const VIEWS = {};
+
+VIEWS.overview = async () => {
+  const d = await API.get('/api/admin/overview');
+  M.replaceChildren(
+    el('h2', {}, 'Overview'), el('p', { class: 'sub' }, 'Live figures from the database.'),
+    el('div', { class: 'cards' },
+      kpi(d.accounts, 'Accounts'), kpi(d.online, 'Online now'), kpi(d.live, 'Live matches'),
+      kpi(d.lobbies, 'Open lobbies'), kpi(d.tournaments, 'Active tournaments'),
+      kpi(d.banned, 'Banned accounts'), kpi(d.ipBans, 'IP bans'), kpi(d.reports, 'Reports')),
+    el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:14px' },
+      panel('Newest accounts', table(['UID', 'Name', 'Joined', ''], d.recentUsers.map(u =>
+        el('tr', {}, el('td', { class: 'mono' }, u.uid), el('td', {}, u.username), el('td', {}, ago(u.created)),
+          el('td', {}, u.banned ? el('span', { class: 'tag bad' }, 'banned') : ''))))),
+      panel('Recent admin actions', table(['When', 'Action', 'Target'], d.recentAudit.map(a =>
+        el('tr', {}, el('td', {}, ago(a.at)), el('td', {}, a.action + (a.ok ? '' : ' ✗')), el('td', { class: 'mono' }, a.target || '—')))))),
+    panel('Server health', el('div', { class: 'mono' },
+      'version ' + d.health.version + '  ·  node ' + d.health.node +
+      '  ·  uptime ' + Math.floor(d.health.uptime / 3600) + 'h ' + Math.floor(d.health.uptime % 3600 / 60) + 'm' +
+      '  ·  memory ' + (d.health.rss / 1048576).toFixed(0) + ' MB')));
+  TIMER = setInterval(() => { if (VIEW === 'overview') VIEWS.overview().catch(() => {}); }, 15000);
+};
+const kpi = (n, label) => el('div', { class: 'kpi' }, el('b', {}, String(n)), el('span', {}, label));
+
+VIEWS.users = async (term) => {
+  const q = term === undefined ? (VIEWS._uq || '') : term;
+  VIEWS._uq = q;
+  const d = await API.get('/api/admin/users' + (q ? '?q=' + encodeURIComponent(q) : ''));
+  const search = el('input', { type: 'search', value: q, placeholder: 'Search by name or UID', style: 'max-width:280px' });
+  let t; search.oninput = () => { clearTimeout(t); t = setTimeout(() => VIEWS.users(search.value).then(() => {
+    const s = M.querySelector('input[type=search]'); if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); }
+  }), 250); };
+  M.replaceChildren(el('h2', {}, 'Users'), el('p', { class: 'sub' }, d.users.length + ' shown. Click a row for details, connection history and moderation.'),
+    el('div', { class: 'row', style: 'margin-bottom:12px' }, search),
+    panel('Accounts', table(['UID', 'Username', 'Joined', 'Last seen', 'Status', ''], d.users.map(u =>
+      el('tr', {},
+        el('td', { class: 'mono' }, u.uid), el('td', {}, u.username, u.uid === d.ownerUid ? el('span', { class: 'tag own', style: 'margin-left:6px' }, 'owner') : null),
+        el('td', {}, ago(u.created)), el('td', {}, u.last_seen ? ago(u.last_seen) : 'never'),
+        el('td', {}, u.banned ? el('span', { class: 'tag bad' }, 'banned') : el('span', { class: 'tag ok' }, 'active')),
+        el('td', {}, el('button', { class: 'btn ghost sm', onclick: () => userDetail(u.uid) }, 'Inspect')))))));
+};
+
+async function userDetail(uid){
+  modal('Account', el('div', { class: 'empty' }, 'Loading…'));
+  const d = await API.get('/api/admin/user?uid=' + uid);
+  const u = d.user, out = el('div', { class: 'msg' });
+  const act = async (path, body, okText) => {
+    out.className = 'msg';
+    try { await API.post(path, body); out.className = 'msg ok'; out.textContent = okText; setTimeout(() => { userDetail(uid); render(); }, 700); }
+    catch (e) { out.className = 'msg err'; out.textContent = e.message; }
+  };
+  const reason = el('input', { type: 'text', placeholder: 'Reason (shown to the player)' });
+
+  modal(u.username + ' — UID ' + u.uid, el('div', {},
+    el('div', { class: 'row', style: 'margin-bottom:12px' },
+      u.banned ? el('span', { class: 'tag bad' }, 'banned') : el('span', { class: 'tag ok' }, 'active'),
+      d.owner ? el('span', { class: 'tag own' }, 'owner') : null,
+      el('span', { class: 'tag mut' }, 'joined ' + dt(u.created)),
+      el('span', { class: 'tag mut' }, 'last seen ' + (u.last_seen ? ago(u.last_seen) : 'never'))),
+    u.banned && u.ban_reason ? el('div', { class: 'msg warn', style: 'display:block' }, 'Ban reason: ' + u.ban_reason) : null,
+    el('div', { class: 'f' }, el('label', {}, 'Reason'), reason), out,
+    el('div', { class: 'row', style: 'margin-bottom:16px' },
+      el('button', { class: 'btn warn sm', onclick: () => act('/api/admin/kick', { uid, reason: reason.value }, 'Kicked from their match.') }, 'Kick from match'),
+      u.banned
+        ? el('button', { class: 'btn sm', onclick: () => act('/api/admin/unban', { uid, reason: reason.value }, 'Ban lifted.') }, 'Lift ban')
+        : el('button', { class: 'btn danger sm', disabled: d.owner || null, onclick: () => act('/api/admin/ban', { uid, reason: reason.value }, 'Account banned.') }, 'Ban account'),
+      el('button', { class: 'btn ghost sm', onclick: () => dmBox(uid, u.username) }, 'Send message')),
+
+    panel('Connection addresses', el('div', {},
+      table(['Address', 'Seen', 'Last', ''], d.ips.map(i =>
+        el('tr', {}, el('td', { class: 'mono' }, i.ip), el('td', {}, i.hits), el('td', {}, ago(i.last)),
+          el('td', {}, el('button', { class: 'btn danger sm', onclick: () => {
+            const c = prompt('Ban which address or range?\n\nA single address, or CIDR like ' + i.ip + '/24', i.ip);
+            if (c) act('/api/admin/ipban', { cidr: c, reason: reason.value || 'ban evasion' }, 'Range banned.');
+          } }, 'Ban range'))))),
+      el('p', { class: 'note' }, 'Only the owner can see this. It is never sent to ordinary players or shown on profiles.'))),
+
+    panel('Other accounts on the same address', el('div', {},
+      table(['UID', 'Username', 'Last seen', 'Status'], d.alts.map(a =>
+        el('tr', {}, el('td', { class: 'mono' }, a.uid),
+          el('td', {}, el('button', { class: 'btn ghost sm', onclick: () => userDetail(a.uid) }, a.username)),
+          el('td', {}, ago(a.last)), el('td', {}, a.banned ? el('span', { class: 'tag bad' }, 'banned') : el('span', { class: 'tag ok' }, 'active'))))),
+      el('p', { class: 'note' }, 'A shared address is a lead, not proof. Families, flatmates, schools, phone networks and VPNs all put unrelated players on one address.'))),
+
+    d.reports.length ? panel('Reports about this player', table(['When', 'Kind', 'Detail'], d.reports.map(r =>
+      el('tr', {}, el('td', {}, ago(r.at)), el('td', {}, r.kind), el('td', {}, r.detail || '—'))))) : null,
+
+    panel('Recent matches', table(['Mode', 'Status', 'When'], d.matches.map(m =>
+      el('tr', {}, el('td', {}, m.mode), el('td', {}, m.status), el('td', {}, ago(m.created))))))));
+}
+
+function dmBox(uid, name){
+  const s = el('input', { type: 'text', maxlength: '120', placeholder: 'Subject' });
+  const b = el('textarea', { rows: '5', maxlength: '4000', placeholder: 'Message' });
+  const out = el('div', { class: 'msg' });
+  modal('Message ' + name, el('div', {},
+    el('div', { class: 'f' }, el('label', {}, 'Subject'), s),
+    el('div', { class: 'f' }, el('label', {}, 'Message'), b), out,
+    el('button', { class: 'btn', onclick: async () => {
+      out.className = 'msg';
+      try { await API.post('/api/admin/message', { uid, subject: s.value, body: b.value });
+        out.className = 'msg ok'; out.textContent = 'Stored. They will see it in their inbox next time the client checks.';
+      } catch (e) { out.className = 'msg err'; out.textContent = e.message; }
+    } }, 'Send')));
+}
+
+VIEWS.matches = async () => {
+  const d = await API.get('/api/admin/matches');
+  M.replaceChildren(el('h2', {}, 'Matches'), el('p', { class: 'sub' }, 'Lobbies and live matches.'),
+    panel('Active', table(['Mode', 'Status', 'Players', 'Opened', ''], d.matches.map(m =>
+      el('tr', {}, el('td', {}, m.mode), el('td', {}, m.status), el('td', {}, (m.players || '—') + ' (' + m.n + '/' + m.cap + ')'),
+        el('td', {}, ago(m.created)),
+        el('td', {}, el('button', { class: 'btn danger sm', onclick: async () => {
+          await API.post('/api/admin/match/end', { id: m.id, reason: 'ended by owner' }); render();
+        } }, 'End')))))));
+  TIMER = setInterval(() => { if (VIEW === 'matches') VIEWS.matches().catch(() => {}); }, 10000);
+};
+
+VIEWS.ipbans = async () => {
+  const d = await API.get('/api/admin/ipbans');
+  const cidr = el('input', { type: 'text', placeholder: '203.0.113.9  or  203.0.113.0/24' });
+  const reason = el('input', { type: 'text', placeholder: 'Reason' });
+  const note = el('input', { type: 'text', placeholder: 'Internal note (never shown to players)' });
+  const out = el('div', { class: 'msg' });
+  const lookIp = el('input', { type: 'text', placeholder: 'Look up an address', style: 'max-width:260px' });
+  M.replaceChildren(el('h2', {}, 'IP bans'), el('p', { class: 'sub' }, 'Applied at the front door: a banned network cannot reach login or registration.'),
+    panel('Add a ban', el('div', {},
+      el('div', { class: 'f' }, el('label', {}, 'Address or range'), cidr),
+      el('div', { class: 'f' }, el('label', {}, 'Reason'), reason),
+      el('div', { class: 'f' }, el('label', {}, 'Note'), note), out,
+      el('button', { class: 'btn danger', onclick: async () => {
+        out.className = 'msg';
+        try { await API.post('/api/admin/ipban', { cidr: cidr.value, reason: reason.value, note: note.value });
+          out.className = 'msg ok'; out.textContent = 'Ban added.'; setTimeout(render, 600);
+        } catch (e) { out.className = 'msg err'; out.textContent = e.message; }
+      } }, 'Ban this range'),
+      el('p', { class: 'note' }, 'IPv4 and IPv6 both work, with or without a /mask. You cannot ban a range covering your own address.'))),
+    panel('Look up an address', el('div', { class: 'row' }, lookIp,
+      el('button', { class: 'btn ghost', onclick: async () => {
+        const r = await API.get('/api/admin/ip?ip=' + encodeURIComponent(lookIp.value));
+        modal('Accounts seen at ' + r.ip, el('div', {},
+          r.banned ? el('div', { class: 'msg warn', style: 'display:block' }, 'This address is currently banned.') : null,
+          table(['UID', 'Username', 'Connections', 'Last', 'Status'], r.accounts.map(a =>
+            el('tr', {}, el('td', { class: 'mono' }, a.uid),
+              el('td', {}, el('button', { class: 'btn ghost sm', onclick: () => userDetail(a.uid) }, a.username)),
+              el('td', {}, a.hits), el('td', {}, ago(a.last)),
+              el('td', {}, a.banned ? el('span', { class: 'tag bad' }, 'banned') : el('span', { class: 'tag ok' }, 'active'))))),
+          el('p', { class: 'note' }, 'Several accounts on one address is common and legitimate. Treat it as a lead.')));
+      } }, 'Look up'))),
+    panel('Current bans', table(['Range', 'Reason', 'Added', 'Status', ''], d.bans.map(b =>
+      el('tr', {}, el('td', { class: 'mono' }, b.cidr), el('td', {}, b.reason || '—'), el('td', {}, ago(b.created)),
+        el('td', {}, b.active ? el('span', { class: 'tag bad' }, 'active') : el('span', { class: 'tag mut' }, 'lifted')),
+        el('td', {}, b.active ? el('button', { class: 'btn ghost sm', onclick: async () => {
+          await API.post('/api/admin/unipban', { id: b.id }); render();
+        } }, 'Lift') : ''))))));
+};
+
+VIEWS.reports = async () => {
+  const d = await API.get('/api/admin/reports');
+  M.replaceChildren(el('h2', {}, 'Reports'), el('p', { class: 'sub' }, 'Raised automatically by a player\'s client when an opponent moves impossibly fast, plus manual reports.'),
+    panel('Recent', table(['When', 'About', 'Kind', 'Detail', 'From'], d.reports.map(r =>
+      el('tr', {}, el('td', {}, ago(r.at)),
+        el('td', {}, r.about_uid ? el('button', { class: 'btn ghost sm', onclick: () => userDetail(r.about_uid) }, r.about_name || ('#' + r.about_uid)) : '—'),
+        el('td', {}, r.kind), el('td', {}, r.detail || '—'), el('td', {}, r.by_name || '—'))))));
+};
+
+VIEWS.audit = async () => {
+  const d = await API.get('/api/admin/audit');
+  M.replaceChildren(el('h2', {}, 'Audit log'), el('p', { class: 'sub' }, 'Every administrative action, including refused attempts. No passwords or tokens are recorded.'),
+    panel('Entries', table(['When', 'Actor', 'Action', 'Target', 'Detail', ''], d.entries.map(a =>
+      el('tr', {}, el('td', {}, dt(a.at)), el('td', { class: 'mono' }, a.actor_uid ?? '—'), el('td', {}, a.action),
+        el('td', { class: 'mono' }, a.target || '—'), el('td', {}, a.detail || '—'),
+        el('td', {}, a.ok ? '' : el('span', { class: 'tag bad' }, 'refused')))))));
+};
+
+VIEWS.messages = async () => {
+  const d = await API.get('/api/admin/announcements');
+  const s = el('input', { type: 'text', maxlength: '120', placeholder: 'Subject' });
+  const b = el('textarea', { rows: '5', maxlength: '4000', placeholder: 'Message to every account' });
+  const out = el('div', { class: 'msg' });
+  M.replaceChildren(el('h2', {}, 'Messages'), el('p', { class: 'sub' }, 'Announcements reach every account; private messages reach one.'),
+    panel('New announcement', el('div', {},
+      el('div', { class: 'f' }, el('label', {}, 'Subject'), s),
+      el('div', { class: 'f' }, el('label', {}, 'Message'), b), out,
+      el('button', { class: 'btn', onclick: async () => {
+        out.className = 'msg';
+        try { await API.post('/api/admin/message', { broadcast: true, subject: s.value, body: b.value });
+          out.className = 'msg ok'; out.textContent = 'Stored. Players see it the next time their client checks in.'; s.value = b.value = ''; setTimeout(render, 800);
+        } catch (e) { out.className = 'msg err'; out.textContent = e.message; }
+      } }, 'Send to everyone'))),
+    panel('Sent', table(['When', 'Kind', 'To', 'Subject'], d.messages.map(m =>
+      el('tr', {}, el('td', {}, dt(m.created)), el('td', {}, m.kind),
+        el('td', { class: 'mono' }, m.to_uid ?? 'everyone'), el('td', {}, m.subject))))));
+};
+
+VIEWS.tournaments = async () => {
+  const d = await API.get('/api/tournaments');
+  const f = {};
+  const field = (k, label, node) => { f[k] = node; return el('div', { class: 'f' }, el('label', {}, label), node); };
+  const out = el('div', { class: 'msg' });
+  M.replaceChildren(el('h2', {}, 'Tournaments'), el('p', { class: 'sub' }, 'Create, open registration, generate the bracket, then record results.'),
+    panel('Create', el('div', {},
+      el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:12px' },
+        field('name', 'Name', el('input', { type: 'text', maxlength: '80' })),
+        field('team_size', 'Format', el('select', {}, ...[1, 2, 3, 4, 5].map(n => el('option', { value: n }, n + 'v' + n)))),
+        field('max_teams', 'Max teams', el('select', {}, ...[2, 4, 8, 16, 32, 64].map(n => el('option', { value: n, selected: n === 8 || null }, n)))),
+        field('best_of', 'Match format', el('select', {}, ...[1, 3, 5].map(n => el('option', { value: n }, 'Best of ' + n)))),
+        field('maps', 'Maps (comma separated)', el('input', { type: 'text', value: 'Mirage' })),
+        field('visibility', 'Visibility', el('select', {}, el('option', { value: 'public' }, 'Public'), el('option', { value: 'private' }, 'Private')))),
+      field('descr', 'Description', el('textarea', { rows: '3', maxlength: '2000' })), out,
+      el('button', { class: 'btn', onclick: async () => {
+        out.className = 'msg';
+        const body = {}; for (const k in f) body[k] = f[k].value;
+        try { await API.post('/api/admin/tournament', body); out.className = 'msg ok'; out.textContent = 'Created as a draft. Open registration when you are ready.'; setTimeout(render, 700); }
+        catch (e) { out.className = 'msg err'; out.textContent = e.message; }
+      } }, 'Create tournament'))),
+    panel('All tournaments', table(['Name', 'Format', 'Teams', 'Status', ''], d.tournaments.map(t =>
+      el('tr', {}, el('td', {}, t.name), el('td', {}, t.team_size + 'v' + t.team_size + ' · bo' + t.best_of),
+        el('td', {}, t.team_count + '/' + t.max_teams), el('td', {}, el('span', { class: 'tag mut' }, t.status)),
+        el('td', {}, el('button', { class: 'btn ghost sm', onclick: () => manageTournament(t.id) }, 'Manage')))))));
+};
+
+async function manageTournament(id){
+  modal('Tournament', el('div', { class: 'empty' }, 'Loading…'));
+  const { tournament: t } = await API.get('/api/tournament?id=' + id);
+  const out = el('div', { class: 'msg' });
+  const run = async (path, body, okText) => {
+    out.className = 'msg';
+    try { await API.post(path, body); out.className = 'msg ok'; out.textContent = okText; setTimeout(() => manageTournament(id), 650); }
+    catch (e) { out.className = 'msg err'; out.textContent = e.message; }
+  };
+  const nameOf = i => (t.teams.find(x => x.id === i) || {}).name || (i ? '#' + i : '—');
+  const rounds = {};
+  t.bracket.forEach(b => { (rounds[b.round] = rounds[b.round] || []).push(b); });
+  const totalRounds = Object.keys(rounds).length;
+
+  modal(t.name, el('div', {},
+    el('div', { class: 'row', style: 'margin-bottom:12px' },
+      el('span', { class: 'tag mut' }, t.status), el('span', { class: 'tag mut' }, t.team_size + 'v' + t.team_size),
+      el('span', { class: 'tag mut' }, t.teams.length + '/' + t.max_teams + ' teams')), out,
+    el('div', { class: 'row', style: 'margin-bottom:14px' },
+      ...['draft', 'open', 'closed', 'cancelled'].map(s => el('button', {
+        class: 'btn ghost sm', onclick: () => run('/api/admin/tournament/status', { id, status: s }, 'Status set to ' + s + '.') }, s)),
+      el('button', { class: 'btn sm', onclick: () => run('/api/admin/tournament/bracket', { id, force: true }, 'Bracket generated.') },
+        t.bracket.length ? 'Regenerate bracket' : 'Generate bracket')),
+    panel('Teams', table(['Team', 'Players', ''], t.teams.map(tm =>
+      el('tr', {}, el('td', {}, tm.name), el('td', {}, tm.members || '—'),
+        el('td', {}, el('button', { class: 'btn danger sm', onclick: () => run('/api/admin/tournament/remove-team', { team: tm.id }, 'Team removed.') }, 'Remove')))))),
+    t.bracket.length ? panel('Bracket', el('div', {}, ...Object.keys(rounds).sort((a, b) => a - b).map(r =>
+      el('div', { style: 'margin-bottom:12px' },
+        el('div', { style: 'font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--m);margin-bottom:6px' },
+          roundName(+r, totalRounds)),
+        table(['Match', 'Score', 'Result', ''], rounds[r].map(b => {
+          const sa = el('input', { type: 'number', value: b.score_a, style: 'width:64px' });
+          const sb = el('input', { type: 'number', value: b.score_b, style: 'width:64px' });
+          const playable = b.team_a && b.team_b && b.status !== 'done';
+          return el('tr', {},
+            el('td', {}, nameOf(b.team_a) + '  vs  ' + nameOf(b.team_b)),
+            el('td', {}, playable ? el('div', { class: 'row' }, sa, sb) : (b.status === 'done' ? b.score_a + ' – ' + b.score_b : '—')),
+            el('td', {}, b.winner ? el('span', { class: 'tag ok' }, nameOf(b.winner)) : el('span', { class: 'tag mut' }, b.status)),
+            el('td', {}, playable ? el('div', { class: 'row' },
+              el('button', { class: 'btn sm', onclick: () => run('/api/admin/tournament/result',
+                { match: b.id, winner: b.team_a, score_a: +sa.value, score_b: +sb.value }, 'Result recorded.') }, nameOf(b.team_a) + ' wins'),
+              el('button', { class: 'btn sm', onclick: () => run('/api/admin/tournament/result',
+                { match: b.id, winner: b.team_b, score_a: +sa.value, score_b: +sb.value }, 'Result recorded.') }, nameOf(b.team_b) + ' wins')) : ''));
+        })))))) : el('p', { class: 'note' }, 'No bracket yet. Close registration and generate one.')));
+}
+function roundName(r, total){
+  const back = total - r;
+  return back === 0 ? 'Final' : back === 1 ? 'Semi-finals' : back === 2 ? 'Quarter-finals' : 'Round ' + r;
+}
+
+(async function boot(){
+  if (!API.token) { location.href = 'index.html'; return; }
+  render();
+})();
+</script>
+</body></html>
