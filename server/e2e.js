@@ -102,14 +102,27 @@ const ck=(n,c,x)=>{if(c){P++;log.push('  ok   '+n)}else{F++;log.push('  FAIL '+n
  });
  ck('a blocked setting is marked and cannot be switched on', refused.had && refused.after===false, refused);
 
- // peer movement validation clamps a teleporting opponent
- const clamp=await A.frame({url:/csgo\.html/}).evaluate(()=>{
-   const a=validateRemote({x:0,z:0,hp:100}); const t0=performance.now();
+ // peer movement validation flags a teleport without rewriting where they are.
+ // Rewriting it was a bug: it dragged a respawning opponent back to the spot
+ // where they died, i.e. on top of whoever killed them.
+ const vr=await A.frame({url:/csgo\.html/}).evaluate(()=>{
+   _vLast=null;_vStrikes=0;_vHp=100;
+   validateRemote({x:0,z:0,hp:100}); const t0=performance.now();
    while(performance.now()-t0<60);
-   const b=validateRemote({x:400,z:0,hp:100});
-   return {x:b.x};
+   const r=validateRemote({x:400,z:0,hp:100});
+   const flagged=_vStrikes;
+   // and a legitimate respawn is not flagged at all
+   _vLast=null;_vStrikes=0;_vHp=100;
+   validateRemote({x:0,z:0,hp:100});
+   const t1=performance.now(); while(performance.now()-t1<60);
+   validateRemote({x:0,z:0,hp:0});
+   const t2=performance.now(); while(performance.now()-t2<60);
+   const rs=validateRemote({x:400,z:0,hp:100,inv:1});
+   return {x:r.x, flagged, respawnX:rs.x, respawnStrikes:_vStrikes};
  });
- ck('an impossible opponent jump is clamped locally', clamp.x<50, clamp);
+ ck('a teleporting opponent is flagged', vr.flagged>0, vr);
+ ck('their reported position is left alone, not rewritten', vr.x===400, vr);
+ ck('a legitimate respawn is not flagged', vr.respawnStrikes===0 && vr.respawnX===400, vr);
 
  // ---- offline mode ----
  const D=await mk('D');

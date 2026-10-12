@@ -33,8 +33,10 @@ constant pointing at the Railway deployment.
 
 ```bash
 node server/server.js     # serves API + game on :8080
-node server/test.js       # 82 backend tests
-node server/e2e.js        # 28 browser tests (needs Playwright)
+node server/test.js         # 95 backend tests
+node server/e2e.js          # 30 browser tests, full platform (needs Playwright)
+node server/chat-e2e.js     # 24 browser tests, menu + chat
+node server/respawn-e2e.js  #  9 browser tests, 1v1 netcode
 ```
 
 Node **22.5+** is required — the backend uses the built-in `node:sqlite`.
@@ -50,6 +52,16 @@ Node **22.5+** is required — the backend uses the built-in `node:sqlite`.
   the address used to reach the backend, not the game traffic. Each client
   polices its opponent's movement instead and reports impossible speed. Do not
   describe this as server-authoritative anti-cheat.
+- **Never rewrite the opponent's position.** Each client owns where it is.
+  `validateRemote` detects and reports, and deliberately does not clamp: an
+  earlier version did, which dragged a respawning opponent back to the spot
+  where they died — parking them on top of whoever had just killed them, who
+  could then kill them repeatedly while they stood somewhere else entirely.
+  A respawn, a death, spawn protection and a packet gap all re-baseline the
+  check rather than counting as a teleport.
+- **Deaths are acknowledged, not assumed.** `dmg()` refuses a kill against a
+  remote player who is spawn protected (`b.inv`, carried in the state packet)
+  or who already has an unacknowledged kill in flight (`b.ko`).
 - **`csgo.html` is one enormous script.** Declaration order matters: `SPEC` and
   `show('Rage')` run at the top level, so anything they touch (`ONLINE_MATCH`,
   `blocked()`, `RANKED_OFF`) must be declared above them or you get a temporal

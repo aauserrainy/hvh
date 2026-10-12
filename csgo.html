@@ -233,31 +233,44 @@ const mpm=new THREE.Mesh(new THREE.SphereGeometry(.13,12,10),new THREE.MeshBasic
 Net.gameId=1;let NETR=null,netT=0;const SPAWNS=[[1685,870],[560,1350],[1040,1450],[470,570],[1100,870],[820,1150]];
 function onSpawn(){const r=bots[0];let best=null,bd=-1;SPAWNS.forEach(a=>{const x=MXf(a[0]),z=MZf(a[1]);if(hit({x,z},.6))return;const d=(r?Math.hypot(r.x-x,r.z-z):0)+Math.random();if(d>bd){bd=d;best={x,z}}});if(!best){for(let i=0;i<300&&!best;i++){const p=rnd();if(!r||Math.hypot(r.x-p.x,r.z-p.z)>15)best=p}}return best||rnd()}let stk=0;
 function remoteUpd(b,dt){const R=NETR;if(b.ko>0)b.ko-=dt;if(!R)return;if(b.dead){if(R.hp>0&&!(b.ko>0)){b.dead=0;b.g.visible=true;b.x=R.x;b.z=R.z}else return}
-const k=Math.min(1,dt*14);b.x+=(R.x-b.x)*k;b.z+=(R.z-b.z)*k;b.y=R.y;b.hp=R.hp;b.aa=!!R.aa;b.side=R.ex>=0?1:-1;
+b.inv=(R.inv||0)>0?1:0;
+/* a respawn is a jump, not a sprint: snap to it rather than sliding across the map */
+const far=Math.hypot(R.x-b.x,R.z-b.z)>12;
+const k=far?1:Math.min(1,dt*14);b.x+=(R.x-b.x)*k;b.z+=(R.z-b.z)*k;b.y=R.y;b.hp=R.hp;b.aa=!!R.aa;b.side=R.ex>=0?1:-1;
 const pd=Math.hypot(b.x-P.x,b.z-P.z)||1,of_=b.aa?b.side*.28:0,gx=(b.z-P.z)/pd,gz=-(b.x-P.x)/pd;b.g.position.set(b.x+gx*of_,b.y,b.z+gz*of_);b.g.rotation.y=R.yaw+(b.aa?b.side*.7:0);b.g.scale.y=1-.3*(R.cr||0);
 if(b.aa){if(!b.gh){b.gh=mkAAG(b.g);sc.add(b.gh)}b.gh.visible=S.aach&&!b.dead;b.gh.position.set(b.x-gx*of_*1.9,b.y,b.z-gz*of_*1.9);b.gh.rotation.y=R.yaw-b.side*.7}else if(b.gh)b.gh.visible=false}
 function netTick(dt){if(hit(P,.34)){stk+=dt;if(stk>.5){const p=onSpawn();P.x=p.x;P.z=p.z;P.vx=P.vz=0;stk=0}}else stk=0;const r=bots[0];if(r&&!r.remote){r.remote=true;r.n='Friend';r.guess=1;r.sf=0;r.aa=false;r.side=1;r.dead=0;r.g.visible=true;r.ko=0}
-netT+=dt;if(netT>.045){netT=0;const ex=S.aa?dsd()*S.desync/58*.28+(S.aamode=='Spin'?Math.sin(ts*12)*S.aarange/180*.28:S.aamode=='Jitter'?(Math.random()<.5?1:-1)*S.aarange/180*.28:0):0;Net.send({t:'s',x:P.x,y:P.y,z:P.z,yaw,cr:P.cr||0,hp:P.hp,aa:S.aa?1:0,ex})}}
+netT+=dt;if(netT>.045){netT=0;const ex=S.aa?dsd()*S.desync/58*.28+(S.aamode=='Spin'?Math.sin(ts*12)*S.aarange/180*.28:S.aamode=='Jitter'?(Math.random()<.5?1:-1)*S.aarange/180*.28:0):0;Net.send({t:'s',x:P.x,y:P.y,z:P.z,yaw,cr:P.cr||0,hp:P.hp,inv:(P.inv||0)>0?1:0,aa:S.aa?1:0,ex})}}
 Net.onOpen(()=>{const role=Net.host?0:1,sp=SPAWNS[role];S.online=true;S.v5=false;S.bots=1;S.mode='Deathmatch';S.dump=false;NETR=null;{let sx=MXf(sp[0]),sz=MZf(sp[1]);if(hit({x:sx,z:sz},.6)){const p=rnd();sx=p.x;sz=p.z}P.x=sx;P.z=sz}P.hp=100;P.inv=2;yaw=role?-Math.PI/2:Math.PI/2;notify('Online 1v1','Connected - first to kill wins the exchange','#8fe03a')});
 Net.on(m=>{if(m.t=='s')NETR=validateRemote(m);else if(m.t=='k'){if(P.inv>0)return;P.hp=0;notify('Friend killed you',m.h?'headshot':'body shot','#4fa3ff')}else if(m.t=='b'){beam(new V(...m.a),new V(...m.b),0xffa040,.3);snd(260)}});
 /* Peer-side movement validation. In a peer to peer match nobody is authoritative,
    so each client polices what it is told about its opponent: a position update that
    implies a speed far above the ranked cap is clamped locally and reported once. */
-let _vLast=null,_vStrikes=0,_vSent=0;
+let _vLast=null,_vStrikes=0,_vSent=0,_vHp=100;
 function validateRemote(R){
  if(!ONLINE_MATCH||!R)return R;
  const t=performance.now();
+ /* A respawn moves a player clear across the map in one packet, and that is
+    perfectly legitimate. Re-baseline on it instead of judging it: otherwise
+    every respawn reads as a teleport, and the old code answered that by
+    dragging the opponent back towards wherever they died - which parks them
+    on top of whoever just killed them. Same for being dead, for spawn
+    protection, and for a gap in packets. */
+ const jumped = R.hp > _vHp || _vHp <= 0 || R.hp <= 0 || (R.inv || 0) > 0;
+ _vHp = R.hp;
+ if(jumped){_vLast={x:R.x,z:R.z,t};_vStrikes=0;return R}
  if(_vLast){
   const dt_=Math.max(.001,(t-_vLast.t)/1000),d=Math.hypot(R.x-_vLast.x,R.z-_vLast.z),sp=d/dt_;
   if(dt_<2&&sp>RANKED.maxSpeed*2.2){
+   /* Report it, never rewrite it. In a peer to peer match each client owns
+      where it is; overriding that only corrupts our own view of them. */
    _vStrikes++;
-   const k=Math.min(1,(RANKED.maxSpeed*1.5*dt_)/Math.max(d,1e-6));
-   R.x=_vLast.x+(R.x-_vLast.x)*k;R.z=_vLast.z+(R.z-_vLast.z)*k;
    if(_vStrikes>12&&t-_vSent>30000){_vSent=t;_vStrikes=0;reportPeer('speed','about '+Math.round(sp)+' u/s against a cap of '+RANKED.maxSpeed)}
   } else if(_vStrikes>0)_vStrikes--;
  }
  _vLast={x:R.x,z:R.z,t};
  return R}
+let _in=0;function invNote(){const t=performance.now();if(t-_in<1200)return;_in=t;notify('Spawn protected','They cannot be hit yet','#ffc04d')}
 function reportPeer(kind,detail){
  if(!SESSION.api||!SESSION.token)return;
  const other=(SESSION.players||[]).find(p=>p.uid!==SESSION.uid);
@@ -352,7 +365,14 @@ function mkArms(L,pistol,rightOnly){const g=new THREE.Group(),bx=(x,y,z,w,h,d,m,
 function mkGun(n){const g=new THREE.Group(),L=W_[n].l,sk=new THREE.MeshLambertMaterial({color:0xd8a47f}),sl=new THREE.MeshLambertMaterial({color:0x3b4a2f}),q=(x,y,z,w,h,d,m,r)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);if(r)o.rotation.x=r;g.add(o)};
 g.add(gunGroup(n));g.add(mkArms(L,!!W_[n].p,false));return g}
 function notify(a,b,c){NT.push({a,b,c,t:0,l:4.5});if(NT.length>5)NT.shift()}
-function dmg(b,d,head){if(b.dead)return;if(b.remote){Net.send({t:'k',h:head?1:0});b.ko=.5}d=100;luaHit(head);HvhLua.emit('hit',{head:!!head,name:b.n,kill:b.hp-d<=0});HvhAudio.hit('csgo',!!head,hsOpts(!!head));b.hp-=d;hm=.3;if(S.hitch)ghost(b,S.hcol,.4,0);notify('Killed '+b.n,head?'headshot':'body shot','#8fe03a');msgs.push([(head?'Hit '+b.n+' in the head for ':'Hit '+b.n+' for ')+Math.round(d),3]);
+function dmg(b,d,head){if(b.dead)return;
+if(b.remote){
+ /* They are spawn protected, or we already sent a kill they have not
+    acknowledged yet. Either way this shot cannot kill them, and counting it
+    locally is what produced the phantom repeat kills. */
+ if(b.inv>0){invNote();return}
+ if(b.ko>0)return;
+ Net.send({t:'k',h:head?1:0});b.ko=.5}d=100;luaHit(head);HvhLua.emit('hit',{head:!!head,name:b.n,kill:b.hp-d<=0});HvhAudio.hit('csgo',!!head,hsOpts(!!head));b.hp-=d;hm=.3;if(S.hitch)ghost(b,S.hcol,.4,0);notify('Killed '+b.n,head?'headshot':'body shot','#8fe03a');msgs.push([(head?'Hit '+b.n+' in the head for ':'Hit '+b.n+' for ')+Math.round(d),3]);
 if(b.hp<=0){if(S.deathch)ghost(b,S.dcol,2.5,1);b.dead=2;b.rs=2.5;if(b.remote||S.nodeath){b.g.visible=false}else{b.dth=0;b.dsd=Math.random()<.5?1:-1}kills++;money=Math.min(16000,money+300);msgs.push(['Killed '+b.n,3])}}
 function eyeM(){return eye().add(MO)}
 function fire(dir,ok){if(pDead)return 1;rc.set(eyeM(),dir);rc.far=200;const hs=rc.intersectObjects([...(mgc?[]:walls),...bots.filter(b=>!b.dead).map(b=>b.g)],true);shot(hs.length?hs[0].point:eyeM().add(dir.clone().multiplyScalar(60)),hs.length?hs[0]:null);
