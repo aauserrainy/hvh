@@ -1,0 +1,73 @@
+# HvH — project notes for Claude
+
+A browser CS:GO-style HvH game plus a small multiplayer platform around it.
+Owner: aauserrainy. Repo: https://github.com/aauserrainy/hvh
+
+## Shape of the thing
+
+Two halves, deployed separately:
+
+- **Client** — static files at the repo root. Served from GitHub Pages at
+  `comefly.xyz/hvh`, and also by the backend.
+- **Backend** — `server/`. Node, **zero dependencies**. Runs on Railway at
+  `hvh-production-bc71.up.railway.app`.
+
+GitHub Pages cannot run the backend. That is why `app.js` has a `DEFAULT_API`
+constant pointing at the Railway deployment.
+
+| File | What it is |
+|---|---|
+| `index.html` | the client: login/register, main menu, lobbies, tournaments, inbox |
+| `admin.html` | owner-only dashboard (UID 1) |
+| `app.js` | shared API client; holds `DEFAULT_API` |
+| `csgo.html` | the whole game — renderer, bots, cheat menu, netcode glue |
+| `net.js` | WebRTC peer connection + signalling transports |
+| `audio.js` | synthesised hit sounds (no audio files) |
+| `lua.js`, `lib/fengari-web.js`, `scripts/` | sandboxed Lua scripting |
+| `server/` | the backend (see `server/README.md`) |
+| `DEPLOY.md` | how to run and deploy |
+| `LUA_API.md` | the scripting API |
+| `ASSETS.md` | asset manifest and licences |
+
+## Running it
+
+```bash
+node server/server.js     # serves API + game on :8080
+node server/test.js       # 82 backend tests
+node server/e2e.js        # 28 browser tests (needs Playwright)
+```
+
+Node **22.5+** is required — the backend uses the built-in `node:sqlite`.
+
+## Things that will bite you
+
+- **No npm dependencies, deliberately.** The backend uses only `node:sqlite`,
+  `node:crypto` and `node:http`. Keep it that way: it is what makes deployment
+  a single command with nothing to install. Do not add a package unless there
+  is no alternative, and say so clearly if you do.
+- **The game is peer to peer.** There is no server in the match. So the server
+  *cannot* validate movement or hit registration, and the IP in the dashboard is
+  the address used to reach the backend, not the game traffic. Each client
+  polices its opponent's movement instead and reports impossible speed. Do not
+  describe this as server-authoritative anti-cheat.
+- **`csgo.html` is one enormous script.** Declaration order matters: `SPEC` and
+  `show('Rage')` run at the top level, so anything they touch (`ONLINE_MATCH`,
+  `blocked()`, `RANKED_OFF`) must be declared above them or you get a temporal
+  dead zone error at load.
+- **Online restrictions are enforced where values are used**, not in the menu —
+  `canManip()`, `canMagic()`, `moveSpeed()`. Hiding a control is not enough; a
+  config import or a Lua script would walk straight past it.
+- **Bump the `?v=` query** on `app.js` / `net.js` / `csgo.html` when you change
+  them, or Pages and browsers serve the stale file.
+- **UID 1 is the owner**, recorded once in the `meta` table at bootstrap. Deleting
+  or banning UID 1 does not promote anyone else.
+- **`TRUST_PROXY`** must be `1` on Railway. Off, every player looks like one
+  address and an IP ban hits everybody. On without a real proxy in front, a
+  client can spoof `X-Forwarded-For` and dodge bans.
+
+## Conventions
+
+- Both test suites should pass before anything is pushed.
+- Work on a branch and open a PR; `main` is what Pages serves.
+- Test visual and gameplay changes by actually rendering them (Playwright with a
+  local three.js r128 build), not by reading the code and assuming.
