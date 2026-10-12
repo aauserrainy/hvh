@@ -712,7 +712,14 @@ function applyGfx(){const q=S.gfx,sm=q=='Quality'?2048:q=='Balanced'?1536:1024;s
 size();applyGfx();
 let t0=performance.now(),fps=60,ts=0;
 function proj(x,y,z){const v=new V(x,y,z).project(cam);return{x:(v.x+1)/2*O.width,y:(1-v.y)/2*O.height,ok:v.z<1}}
-function tick(now){requestAnimationFrame(tick);let dt=Math.min((now-t0)/1000,.05);t0=now;fps+=(1/Math.max(dt,.001)-fps)*.05;const t=now/1000;ts+=dt;
+function tick(now){requestAnimationFrame(tick);/* The lower bound matters as much as the upper one. `t0` is seeded with
+   performance.now(), but `now` here is the rAF timestamp - the time the frame
+   STARTED, captured before that call - so after a long synchronous block at
+   load the first frame reports a negative elapsed time. Every accumulator that
+   decays by dt then grows instead: kick ran to ~4.8, parking the viewmodel five
+   units behind the camera, and the weapon simply was not drawn for seconds. A
+   frame cannot take less than no time. */
+let dt=Math.min(Math.max((now-t0)/1000,0),.05);t0=now;fps+=(1/Math.max(dt,.001)-fps)*.05;const t=now/1000;ts+=dt;
 if(S.mode!==lastMode||S.v5!==lastV5){lastV5=S.v5;lastMode=S.mode;resetBots();P.hp=100;if(S.mode=='Deathmatch'){phase='live';money=16000}else{rd=0;newRound()}}if(S.mode=='Deathmatch')money=16000;
 if(locked){if(phase!='live'){pt-=dt;if(pt<=0){if(phase=='buy')phase='live';else newRound()}}else if(S.mode!='Deathmatch'&&!bots.some(b=>!b.dead))endRound(1);else if(V5()&&pDead&&!mates.some(m=>!m.dead))endRound(0)}
 // player
@@ -747,7 +754,14 @@ bm.depthTest=true;GLM.color.set(S.glowcol);bots.forEach(b=>{b.ol.forEach(o=>o.vi
 cam.fov=S.cfov;cam.updateProjectionMatrix();const e=eye(),v=vd();cam.rotation.set(pitch,yaw,0);
 let cp=e.clone();if(S.tp){cp.sub(v.clone().multiplyScalar(S.tpd));rc.set(e,v.clone().negate());rc.far=S.tpd;const hh=rc.intersectObjects(walls);if(hh.length)cp=e.clone().sub(v.clone().multiplyScalar(Math.max(.3,hh[0].distance-.2)))}cam.position.copy(cp);
 if(vmN!=(kn?'Knife':S.weapon)){if(vm)cam.remove(vm);sc.remove(pm,gm);const wk=kn?'Knife':S.weapon;pm=mkHuman(wk);gm=mkGhost();if(pg2)sc.remove(pg2);pg2=mkAAG(pm);sc.add(pm,gm,pg2);HvhLua.emit('weapon',{name:wk});vm=wk=='Knife'?mkKnife(1):mkGun(wk);vm.position.set(.22,-.2,-.35);cam.add(vm);vmN=wk;anim('draw')}
-HvhLua.emit('tick',dt);vm.visible=S.vm&&!S.tp;kick=Math.max(0,kick-dt*.5);vm.position.z=-.35+kick;slash=Math.max(0,slash-dt*3);vm.rotation.x=kn?-slash*1.4:kick*1.6;vm.position.y=-.2-(kn?slash*.08:0);if(ANI.t<ANI.d){ANI.t+=dt;const u=Math.min(1,ANI.t/ANI.d),bmp=Math.sin(Math.PI*u),e=u<.5?2*u*u:1-2*(1-u)*(1-u);if(ANI.k=='draw'){vm.position.y-=.35*(1-e);vm.rotation.x-=.9*(1-e)}else if(ANI.k=='reload'){vm.position.y-=.14*bmp;vm.rotation.x-=.4*bmp;vm.rotation.z=.55*bmp;vm.position.x=.22-.06*bmp;if(u>.3&&u<.36)vm.position.y-=.03}else if(ANI.k=='inspect'){vm.rotation.y=-.9*bmp+Math.sin(u*Math.PI*3)*.25*bmp;vm.rotation.z=.6*Math.sin(u*Math.PI*2)*bmp;vm.position.x=.22-.1*bmp;vm.position.y+=.04*bmp}}else{vm.rotation.z=0;vm.rotation.y=0;vm.position.x=.22}FX.forEach(f=>{f.l-=dt;const k=Math.max(0,f.l/f.l0);f.g.traverse(o=>{if(o.isMesh)o.material.opacity=k*.6});if(f.fall){f.g.rotation.x=-Math.min(1,(1-k)*5)*1.45}});for(let i=FX.length-1;i>=0;i--)if(FX[i].l<=0){sc.remove(FX[i].g);FX.splice(i,1)}updFx(dt);tr=tr.filter(l=>{l.material.opacity=Math.max(0,l.life/l.l0)*.9;if((l.life-=dt)<=0){sc.remove(l);return false}return true});
+HvhLua.emit('tick',dt);vm.visible=S.vm&&!S.tp;/* kick is the firing recoil of the viewmodel and both places that raise it
+   clamp to .07. Only the decay was unclamped, so a single frame with a
+   negative dt grows it instead of shrinking it - and at kick~4.8 the weapon
+   sits nearly five units BEHIND the camera and is simply not drawn, then
+   creeps back over several seconds. That is the intermittent 'no gun on
+   screen' bug. Clamping here makes the invariant structural rather than
+   relying on every writer to respect it. */
+kick=Math.max(0,Math.min(.07,kick-dt*.5));vm.position.z=-.35+kick;slash=Math.max(0,slash-dt*3);vm.rotation.x=kn?-slash*1.4:kick*1.6;vm.position.y=-.2-(kn?slash*.08:0);if(ANI.t<ANI.d){ANI.t+=dt;const u=Math.min(1,ANI.t/ANI.d),bmp=Math.sin(Math.PI*u),e=u<.5?2*u*u:1-2*(1-u)*(1-u);if(ANI.k=='draw'){vm.position.y-=.35*(1-e);vm.rotation.x-=.9*(1-e)}else if(ANI.k=='reload'){vm.position.y-=.14*bmp;vm.rotation.x-=.4*bmp;vm.rotation.z=.55*bmp;vm.position.x=.22-.06*bmp;if(u>.3&&u<.36)vm.position.y-=.03}else if(ANI.k=='inspect'){vm.rotation.y=-.9*bmp+Math.sin(u*Math.PI*3)*.25*bmp;vm.rotation.z=.6*Math.sin(u*Math.PI*2)*bmp;vm.position.x=.22-.1*bmp;vm.position.y+=.04*bmp}}else{vm.rotation.z=0;vm.rotation.y=0;vm.position.x=.22}FX.forEach(f=>{f.l-=dt;const k=Math.max(0,f.l/f.l0);f.g.traverse(o=>{if(o.isMesh)o.material.opacity=k*.6});if(f.fall){f.g.rotation.x=-Math.min(1,(1-k)*5)*1.45}});for(let i=FX.length-1;i>=0;i--)if(FX[i].l<=0){sc.remove(FX[i].g);FX.splice(i,1)}updFx(dt);tr=tr.filter(l=>{l.material.opacity=Math.max(0,l.life/l.l0)*.9;if((l.life-=dt)<=0){sc.remove(l);return false}return true});
 if(window.__cam)window.__cam(cam,P,bots);trackSun();
 if(composer)composer.render();else ren.render(sc,cam);
 // hud
