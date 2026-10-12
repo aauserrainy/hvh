@@ -1,6 +1,6 @@
-/* HvH audio manager v1 - shared by the CS:GO and Rust modes.
+/* HvH audio manager v1 - for the CS:GO mode.
    Every sound is synthesised with WebAudio (no sound files, nothing to license).
-   Each game passes its own settings per call, so CS:GO and Rust never share configuration.
+   The caller passes its settings per call.
    Hit sounds are played only from confirmed-hit events (the games call HvhAudio.hit once per confirmed hit);
    a 35 ms guard also drops accidental double triggers, and the number of live voices is capped. */
 (function(){
@@ -31,7 +31,7 @@ const P={
   'Metallic':(a,t,v)=>{noise(a,t,.02,.5*v,'bandpass',3200,4);[1210,1870,2760,3920].forEach((f,i)=>osc(a,t,'square',f,f*.99,.12+.02*i,.1*v));osc(a,t,'sine',620,600,.18,.25*v)},
   'Pop':(a,t,v)=>{osc(a,t,'sine',900,180,.09,.7*v);noise(a,t,.01,.5*v,'highpass',3000)},
   'Double tick':(a,t,v)=>{[0,.055].forEach((d,i)=>{noise(a,t+d,.01,.7*v,'highpass',3800);osc(a,t+d,'sine',i?2600:2000,i?2550:1950,.045,.4*v)})},
-  'Rust headshot':(a,t,v)=>{noise(a,t,.035,.85*v,'bandpass',2800,1.2);osc(a,t,'sine',2100,2060,.26,.38*v);osc(a,t,'sine',3150,3100,.2,.2*v);osc(a,t,'sine',150,48,.14,.55*v)},
+  'Impact':(a,t,v)=>{noise(a,t,.035,.85*v,'bandpass',2800,1.2);osc(a,t,'sine',2100,2060,.26,.38*v);osc(a,t,'sine',3150,3100,.2,.2*v);osc(a,t,'sine',150,48,.14,.55*v)},
   'Helmet clank':(a,t,v)=>{noise(a,t,.04,.6*v,'bandpass',1800,3);[780,1330,2140,3300].forEach((f,i)=>osc(a,t,'triangle',f,f*.97,.22-.03*i,.18*v));osc(a,t,'sine',210,90,.1,.4*v)}
  },
  body:{
@@ -50,8 +50,7 @@ const SX={
 A.sfx=function(name,vol){const a=ctx();if(!a||!SX[name])return false;try{SX[name](a,a.currentTime+.001,Math.min(1,vol==null?.6:vol))}catch(e){return false}return true};
 A.names={head:Object.keys(P.head),body:Object.keys(P.body)};
 /* recommended lists per mode (shown in each game's menu) */
-A.lists={csgo:{head:['Skeet','Bell','Metallic','Pop','Double tick'],body:['Tick','Thud','Soft pop','Hitmarker']},
-         rust:{head:['Rust headshot','Helmet clank','Skeet','Bell'],body:['Flesh','Thud','Tink','Hitmarker']}};
+A.lists={csgo:{head:['Skeet','Bell','Metallic','Pop','Double tick','Impact','Helmet clank'],body:['Tick','Thud','Soft pop','Hitmarker','Tink','Flesh']}};
 
 /* o = {on:bool, pack:string, vol:0..1 (already master*category)} */
 function play(kind,o){
@@ -59,7 +58,7 @@ function play(kind,o){
  const a=ctx();if(!a)return false;if(A.voices>=A.MAXV&&kind!='head')return false;
  A.voices++;setTimeout(()=>{A.voices=Math.max(0,A.voices-1)},450);
  try{fn(a,a.currentTime+.001,Math.min(1,o.vol))}catch(e){A.voices=Math.max(0,A.voices-1);return false}return true}
-/* confirmed hit. ns = 'csgo' | 'rust'. Guard against duplicate triggers for the same hit. */
+/* confirmed hit. ns namespaces the duplicate guard. Guard against duplicate triggers for the same hit. */
 A.hit=function(ns,head,o){const k=ns+(head?'h':'b'),n=performance.now();if(n-(A.last[k]||0)<35)return false;A.last[k]=n;return play(head?'head':'body',o)};
 /* settings-menu preview: never deduplicated */
 A.preview=function(head,o){return play(head?'head':'body',o)};
