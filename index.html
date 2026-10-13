@@ -769,7 +769,7 @@ function launch(offline, m){
   loadShow();
   setTimeout(() => loadHide(true), 25000);          /* backstop only */
   sessionStorage.setItem('hvh_session_cfg', JSON.stringify(cfg));
-  g.src = 'csgo.html?v=49&mode=' + (offline ? 'offline' : 'online');
+  g.src = 'csgo.html?v=50&mode=' + (offline ? 'offline' : 'online');
   g.style.display = 'block';
   $('leave').style.display = 'block';
   const tag = $('modeTag');

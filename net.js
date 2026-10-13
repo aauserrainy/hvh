@@ -267,4 +267,17 @@ function build(){
  $('hvh-m3').onclick=()=>Net.manualFinish($('hvh-pin').value);
  [$('hvh-in'),$('hvh-met'),$('hvh-turn'),$('hvh-pin'),$('hvh-pout'),$('hvh-link')].forEach(el=>{el.addEventListener('keydown',e=>{e.stopPropagation();if(e.key=='Enter'&&el.id=='hvh-in')Net.joinGame(el.value)});el.addEventListener('keyup',e=>e.stopPropagation())});
  const j=q.get('join');if(j){ui.style.display='flex';$('hvh-in').value=j;setTimeout(()=>Net.joinGame(j),300)}}
-window.Net=Net;if(document.body)build();else addEventListener('DOMContentLoaded',build)})();
+/* The peer-to-peer lobby is meaningless in an offline match, but its button sat
+   in the corner of the screen reading "ONLINE 1v1" the whole time you were
+   playing bots. Build the elements either way - Net.reset() and _lost() write
+   to them unconditionally, so leaving them undefined would throw - but keep
+   them out of sight and make the lobby a no-op offline. */
+const OFFLINE=(()=>{try{
+ if(new URLSearchParams(location.search).get('mode')==='offline')return true;
+ const c=JSON.parse(sessionStorage.getItem('hvh_session_cfg')||'null');
+ return !!(c&&c.offline);
+}catch(e){return false}})();
+function boot(){build();
+ if(OFFLINE){if(btn)btn.style.display='none';if(ui)ui.style.display='none';
+  Net.lobby=()=>{}}}
+window.Net=Net;if(document.body)boot();else addEventListener('DOMContentLoaded',boot)})();
