@@ -1,6 +1,13 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <title>rainy.hvh</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- index.html is the entry point, so the ?v= query that cache-busts app.js,
+     net.js and csgo.html can never apply to it: a browser holding a cached copy
+     keeps serving the old menu after a deploy, which is why updates kept
+     appearing not to ship. Ask for revalidation on every load. The page is a
+     few KB; the round trip costs nothing next to shipping a stale client. -->
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <style>
 :root{--bg:#0b0c0e;--p:#131519;--p2:#181b20;--l:#272b32;--t:#dfe3e8;--m:#878f9b;--a:#4d8df0;--g:#8fe03a;--r:#ff5468;--y:#ffc04d;
  --sp:16px;--rad:10px;box-sizing:border-box}
