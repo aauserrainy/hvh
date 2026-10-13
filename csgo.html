@@ -145,7 +145,7 @@ input[type=range]{box-shadow:inset 0 1px 2px #000}.g b{font-weight:700;letter-sp
 <div id="hint">Click to play<br>WASD move, Space jump, mouse aim, LMB shoot<br>RIGHT SHIFT opens the menu, V = third person, C = crouch, Q = knife<br>Buy with keys 1-9 and 0 (B hides the list in deathmatch)</div>
 <div id="m"><div class="bar"></div><div id="hd"><i class="lg"></i><div class="nv" id="nv"></div><div class="pf"><div>hvh_player<br><small style="color:#9ab">In game</small></div><i class="av"></i></div></div><div class="body"><div id="tabs"></div><div id="pg"></div></div></div>
 
-<script src="net.js?v=41"></script>
+<script src="net.js?v=42"></script>
 <script src="audio.js?v=34"></script>
 <script src="lib/fengari-web.js"></script>
 <script src="lua.js?v=34"></script>
@@ -343,13 +343,13 @@ function blocked(k){return ONLINE_MATCH&&(RANKED_OFF.includes(k)||BOT_KEYS.inclu
    this is read from code that runs very early. */
 function GFX(){return S.boost?'Performance':S.gfx}
 let _bn=0;function bNote(k){const t=performance.now();if(t-_bn<1500)return;_bn=t;notify('Online match',BOT_KEYS.includes(k)?'Bot settings are offline only':'Disabled by the ranked ruleset','#ffc04d')}
-const S={baa_prof:'Mixed',bs_crouch:true,bs_jig:true,bs_rep:true,dbg_perf:false,dbg_hb:false,dbg_ins:false,baa_on:true,baa_pitch:'Jitter',baa_head:40,baa_lean:50,baa_spd:100,gfx:'Quality',boost:false,wsat:100,wbri:100,wcon:100,whue:0,skyc:'#4f8fd8',fogd:170,grain:false,grainx:35,scan:false,scanx:30,vigx:45,vmx:0,vmy:0,vmz:0,vmroll:0,twid:2,vig:true,hs_on:true,hs_head:'Skeet',hs_body:'Tick',hs_master:80,hs_hvol:100,hs_bvol:70,v5:true,luaAbs:false,luaBloom:false,ab_cross:true,ab_cstyle:'Bloom ring',ab_csz:7,ab_cgap:5,ab_ccol:'#9fca2b',ab_dyn:true,ab_kb:true,ab_kbpos:'Right',ab_kbo:0,ab_aaq:true,ab_wm:true,bl_hit:true,bl_dmg:true,bl_vig:true,bl_col:'#ff6ad5',bl_int:60,prefbaim:true,dt:false,sel:'Crosshair',lg:false,lgfov:8,lgsm:6,lgrcs:true,snap:false,dist:false,radar:true,trace:true,snd:true,vm:true,slow:false,astr:true,ptc:'Down',theme:'Skeet',rage:true,silent:false,autofire:true,resolver:'Brute-force',arrow:true,nofog:false,twalls:0,autoscope:true,stop:true,fov:60,hitbox:'Head',mindmg:30,hc:70,weapon:'Glock-18',
+const S={baa_prof:'Mixed',bs_crouch:true,bs_jig:true,bs_rep:true,dbg_perf:false,dbg_hb:false,dbg_ins:false,baa_on:true,baa_pitch:'Jitter',baa_head:40,baa_lean:50,baa_spd:100,gfx:'Quality',boost:false,adapt:true,wsat:100,wbri:100,wcon:100,whue:0,skyc:'#4f8fd8',fogd:170,grain:false,grainx:35,scan:false,scanx:30,vigx:45,vmx:0,vmy:0,vmz:0,vmroll:0,twid:2,vig:true,hs_on:true,hs_head:'Skeet',hs_body:'Tick',hs_master:80,hs_hvol:100,hs_bvol:70,v5:true,luaAbs:false,luaBloom:false,ab_cross:true,ab_cstyle:'Bloom ring',ab_csz:7,ab_cgap:5,ab_ccol:'#9fca2b',ab_dyn:true,ab_kb:true,ab_kbpos:'Right',ab_kbo:0,ab_aaq:true,ab_wm:true,bl_hit:true,bl_dmg:true,bl_vig:true,bl_col:'#ff6ad5',bl_int:60,prefbaim:true,dt:false,sel:'Crosshair',lg:false,lgfov:8,lgsm:6,lgrcs:true,snap:false,dist:false,radar:true,trace:true,snd:true,vm:true,slow:false,astr:true,ptc:'Down',theme:'Skeet',rage:true,silent:false,autofire:true,resolver:'Brute-force',arrow:true,nofog:false,twalls:0,autoscope:true,stop:true,fov:60,hitbox:'Head',mindmg:30,hc:70,weapon:'Glock-18',
 aa:false,aamode:'Spin',aarange:58,
 esp:false,name:true,hp:false,skel:false,chams:false,chamcol:'#ff3b6b',fovc:false,hitm:true,tp:false,cfov:90,
 bhop:true,speed:6,wm:true,ind:true,botacc:45,bots:12,diff:'Hard',desync:58,dside:'Jitter',fl:false,fll:6,nsp:false,wpn:false,night:false,lbl:true,tpd:3,accent:'#3f84e8',bres:0,manip:true,mrange:20,magic:true,glow:true,glowcol:'#ff8a1f',aach:true,bvb:false,dump:false,tcol:'#7ad0ff',hitch:true,hcol:'#ffffff',deathch:true,dcol:'#ff3b6b',mode:'Competitive'};const DEF=JSON.stringify(S);
 const SPEC={Legit:[['Aim assist',[['c','lg','Enabled (rage off, hold LMB)'],['s','lgfov','FOV',1,30],['s','lgsm','Smoothing',1,20],['c','lgrcs','Recoil control']]]],Rage:[['Aimbot',[['c','rage','Ragebot Enabled'],['c','dt','Double tap'],['d','resolver','Resolver',['Off','Brute-force','Smart']],['c','nsp','Remove recoil'],['c','prefbaim','Prefer body aim if lethal'],['d','sel','Target selection',['Crosshair','Lowest HP','Nearest']],['c','silent','Silent aim'],['c','autofire','Automatic fire'],['c','stop','Quick stop'],['c','manip','Manipulation (hold K)'],['s','mrange','Manipulation range (dm)',5,40],['c','magic','Magic bullet (through walls)'],['s','fov','Ragebot FOV',1,180],['d','hitbox','Target hitbox',['Head','Chest','Stomach','Legs']],['s','mindmg','Minimum damage',1,100],['s','hc','Minimum hitchance',0,100],['c','autoscope','Automatic scope']]]],
 'Anti-aim':[['Angles',[['c','aa','Enabled'],['d','aamode','Yaw',['Spin','Jitter','Static 180']],['d','ptc','Pitch',['Down','Up','Zero']],['s','desync','Desync amount',0,58],['d','dside','Desync side',['Left','Right','Jitter']],['c','fl','Fake lag'],['c','dump','Dump (bots miss every shot)'],['s','bres','Bot resolve chance',0,100],['s','fll','Fake lag limit',1,14],['c','slow','Slow walk'],['s','aarange','Jitter / desync range',0,180]]]],
-Visuals:[['Players',[['c','esp','Bounding box'],['c','name','Name'],['c','hp','Health bar'],['c','skel','Skeleton'],['c','glow','Enemy glow outline'],['k','glowcol','Glow color'],['c','aach','Anti-aim chams (green)'],['c','chams','Chams (through walls)'],['k','chamcol','Chams color'],['c','snap','Snaplines'],['c','dist','Distance'],['c','radar','Radar']]],['Other',[['c','fovc','Draw FOV'],['c','trace','Bullet tracers'],['k','tcol','Tracer color'],['c','hitch','Hit chams'],['k','hcol','Hit chams color'],['c','deathch','Death chams'],['k','dcol','Death chams color'],['c','arrow','Out of FOV arrow'],['d','gfx','Graphics quality',['Performance','Balanced','Quality']],['c','boost','Boost FPS (lowers graphics)'],['c','vig','Vignette / color grade'],['c','nofog','Remove fog'],['s','twalls','Transparent walls',0,100],['c','hitm','Hitmarker'],['c','tp','Third person (V)'],['s','tpd','Third person distance',1,8],['c','lbl','Map callouts'],['c','night','Night mode'],['c','wpn','Weapon name'],['c','vm','Weapon viewmodel'],['c','trace','Bullet tracers'],['c','snd','Hit sound'],['s','cfov','Camera FOV',60,120]]],['World',[['s','wsat','Saturation',0,200],['s','wbri','Brightness',50,150],['s','wcon','Contrast',50,150],['s','whue','Hue shift',-180,180],['k','skyc','Sky color'],['s','fogd','Fog distance',40,400]]],['Screen',[['c','grain','Film grain'],['s','grainx','Grain amount',5,100],['c','scan','Scanlines'],['s','scanx','Scanline strength',5,100],['s','vigx','Vignette strength',0,100]]],['Viewmodel',[['s','vmx','Offset X',-30,30],['s','vmy','Offset Y',-30,30],['s','vmz','Offset Z',-30,30],['s','vmroll','Roll',-30,30],['s','twid','Tracer width',1,6]]]],
+Visuals:[['Players',[['c','esp','Bounding box'],['c','name','Name'],['c','hp','Health bar'],['c','skel','Skeleton'],['c','glow','Enemy glow outline'],['k','glowcol','Glow color'],['c','aach','Anti-aim chams (green)'],['c','chams','Chams (through walls)'],['k','chamcol','Chams color'],['c','snap','Snaplines'],['c','dist','Distance'],['c','radar','Radar']]],['Other',[['c','fovc','Draw FOV'],['c','trace','Bullet tracers'],['k','tcol','Tracer color'],['c','hitch','Hit chams'],['k','hcol','Hit chams color'],['c','deathch','Death chams'],['k','dcol','Death chams color'],['c','arrow','Out of FOV arrow'],['d','gfx','Graphics quality',['Performance','Balanced','Quality']],['c','boost','Boost FPS (lowers graphics)'],['c','adapt','Adaptive resolution'],['c','vig','Vignette / color grade'],['c','nofog','Remove fog'],['s','twalls','Transparent walls',0,100],['c','hitm','Hitmarker'],['c','tp','Third person (V)'],['s','tpd','Third person distance',1,8],['c','lbl','Map callouts'],['c','night','Night mode'],['c','wpn','Weapon name'],['c','vm','Weapon viewmodel'],['c','trace','Bullet tracers'],['c','snd','Hit sound'],['s','cfov','Camera FOV',60,120]]],['World',[['s','wsat','Saturation',0,200],['s','wbri','Brightness',50,150],['s','wcon','Contrast',50,150],['s','whue','Hue shift',-180,180],['k','skyc','Sky color'],['s','fogd','Fog distance',40,400]]],['Screen',[['c','grain','Film grain'],['s','grainx','Grain amount',5,100],['c','scan','Scanlines'],['s','scanx','Scanline strength',5,100],['s','vigx','Vignette strength',0,100]]],['Viewmodel',[['s','vmx','Offset X',-30,30],['s','vmy','Offset Y',-30,30],['s','vmz','Offset Z',-30,30],['s','vmroll','Roll',-30,30],['s','twid','Tracer width',1,6]]]],
 Misc:[['Miscellaneous',[['c','bhop','Bunny hop'],['c','astr','Auto strafe'],['s','speed','Move speed',3,12]]],['Settings',[['c','wm','Watermark'],['c','ind','Indicators']]],['Hit sounds',[['c','hs_on','Enable hit sounds'],['d','hs_head','Headshot sound',HvhAudio.lists.csgo.head],['d','hs_body','Body hit sound',HvhAudio.lists.csgo.body],['s','hs_master','Master hit volume',0,100],['s','hs_hvol','Headshot volume',0,100],['s','hs_bvol','Body hit volume',0,100],['b','hs_th','Test headshot'],['b','hs_tb','Test body hit']]],['Presets',[['k','accent','Menu color'],['d','theme','Theme',['Skeet','Neverlose']],['b','cfg_exp','Export config (copy to clipboard)'],['b','cfg_imp','Import config (paste)'],['b','save','Save config'],['b','load','Load config'],['b','reset','Reset config']]],['Debug tools',[['c','dbg_perf','Performance + network overlay'],['c','dbg_hb','Show hitboxes'],['c','dbg_ins','Bot inspector + target path']]]],Bots:[['Bots',[['d','mode','Game mode',['Competitive','Deathmatch']],['c','v5','5v5 teams (Competitive)'],['c','bvb','Bots fight each other'],['d','diff','Difficulty',['Easy','Normal','Hard','Nightmare']],['s','botacc','Bot accuracy',0,100],['s','bots','Bot count',1,1000]]],['Bot anti-aim pose',[['c','baa_on','Visible anti-aim pose'],['d','baa_prof','Profile (per bot when Mixed)',['Mixed','Spin','Jitter','Static','Down','Crouch']],['d','baa_pitch','Pitch',['Down','Up','Jitter','Off']],['s','baa_head','Head yaw jitter',0,90],['s','baa_lean','Torso twist %',0,100],['s','baa_spd','Speed %',25,300]]],['Smart bots',[['c','bs_jig','Jiggle peek'],['c','bs_crouch','Crouch peek'],['c','bs_rep','Reposition after holding angle']]]],Lua:[['Lua scripting',[['b','lua_open','Open Lua script manager']]],['Built-in overlays',[['c','luaAbs','absence.space  (inject)'],['c','luaBloom','bloom.tool  (inject)']]],['absence.space',[['c','ab_cross','Custom crosshair'],['d','ab_cstyle','Crosshair style',['Dot','Cross','Circle','Bloom ring']],['s','ab_csz','Crosshair size',2,24],['s','ab_cgap','Crosshair gap',0,20],['k','ab_ccol','Accent / crosshair color'],['c','ab_dyn','Dynamic gap (movement)'],['c','ab_kb','Keybind list'],['d','ab_kbpos','Keybind position',['Left','Right','Top','Bottom','Under crosshair']],['s','ab_kbo','Keybind offset',0,300],['c','ab_aaq','Anti-aim quality bar'],['c','ab_wm','Watermark']]],['bloom.tool',[['c','bl_hit','Bloom hitmarker'],['c','bl_dmg','Hit text'],['c','bl_vig','Screen glow on hit'],['k','bl_col','Bloom color'],['s','bl_int','Glow intensity',0,100]]]]};
 const pg=document.getElementById('pg'),tabs=document.getElementById('tabs'),M=document.getElementById('m'),nv=document.getElementById('nv');
 let curT='Rage',gi=0;const IC={Bots:'<svg viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M8.5 3.5h7"/><circle cx="9.3" cy="13" r="1.4"/><circle cx="14.7" cy="13" r="1.4"/><path d="M9.5 16.5h5M2.6 11.5v4M21.4 11.5v4"/></svg>',Legit:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 3v5M12 16v5M3 12h5M16 12h5"/></svg>',Rage:'<svg viewBox="0 0 24 24"><path d="M6 4h12v8c0 5-3 8-6 8s-6-3-6-8z"/><path d="M8 10h3M13 10h3"/><path d="M9 15h6"/></svg>','Anti-aim':'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/><path d="M12 3v18"/></svg>',Visuals:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 7a5 5 0 0 0 0 10z" fill="currentColor"/><circle cx="12" cy="12" r="8.5" stroke-dasharray="1.6 2.2"/></svg>',Misc:'<svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="9" cy="9" r="6.2" stroke-dasharray="2.2 1.9" stroke-width="2.6"/><circle cx="17" cy="17" r="2"/><circle cx="17" cy="17" r="4" stroke-dasharray="1.5 1.4" stroke-width="2"/></svg>'};
@@ -403,6 +403,29 @@ let _shTick=0;
 /* Boost FPS only helps the people who find it. If the frame rate stays poor for
    a few seconds and it is off, say so once - once per session, never again. */
 let _lowT=0,_lowSaid=false;
+/* Adaptive resolution. Fixed quality presets assume you know what the machine
+   can do; this measures instead. Render scale walks down toward .5 while frames
+   are slow and back up toward the preset while they are fast, which is the one
+   lever that works on hardware I cannot profile from here. Deliberately slow to
+   react and hysteretic - a scale that chases every frame spike is visible as
+   the image softening and sharpening, which is worse than being a bit slow. */
+let _dynS=1,_dynAcc=0,_dynN=0;
+function adaptRes(dt){
+ /* Clamp to the display FIRST. The Quality preset asks for 1.75, but on an
+    ordinary 1x screen the renderer is already capped at 1 - scaling the preset
+    instead of the effective ratio meant the scale had to fall below .57 before
+    a single pixel changed, so this did nothing for most people. */
+ const base=Math.min(devicePixelRatio||1, S.boost?.72:GFX()=='Performance'?1:GFX()=='Balanced'?1.25:1.75);
+ if(!S.adapt){if(_dynS!==1){_dynS=1;ren.setPixelRatio(base)}return}
+ _dynAcc+=dt;_dynN++;
+ if(_dynAcc<.5)return;                       /* judge on half a second, not one frame */
+ const avg=_dynAcc/_dynN;_dynAcc=0;_dynN=0;
+ const want=1/60, slow=1/48;
+ if(avg>slow&&_dynS>.5)_dynS=Math.max(.5,_dynS-.06);
+ else if(avg<want*.8&&_dynS<1)_dynS=Math.min(1,_dynS+.03);
+ else return;
+ ren.setPixelRatio(base*_dynS);
+}
 function fpsWatch(dt){
  if(_lowSaid||S.boost)return;
  _lowT = (dt>0&&1/dt<38) ? _lowT+dt : 0;
@@ -602,7 +625,13 @@ mrects((r,c)=>MG[r][c]===null?((r>>3)*5+(c>>3)*11)%3:null).forEach((q,i)=>{
  const dm=new THREE.Object3D();
  for(const kind in byKind){
   const list=byKind[kind],im=new THREE.InstancedMesh(UNIT,M[kind],list.length);
-  im.castShadow=kind!=='winrec';im.receiveShadow=true;im.frustumCulled=false;
+  /* The shadow map is a second full render, and it was walking all 3,132 prop
+   instances. A barrel against a wall or a 14cm window bar contributes almost
+   nothing to the shadow you can actually see, so only the large elements - the
+   roofline, the base course, balconies and rooftop boxes - cast. Measured: the
+   shadow pass was 5.1ms of an 8.3ms frame before this. */
+const CASTS={cornice:1,parapet:1,plinth:1,balcony:1,roofbox:1,arch:1};
+  im.castShadow=!!CASTS[kind];im.receiveShadow=true;im.frustumCulled=false;
   im.raycast=()=>{};                              /* never intercepts a bullet */
   list.forEach((o,n)=>{dm.position.set(o.x,o.y,o.z);dm.rotation.set(0,o.ry,0);
     dm.scale.set(o.sx,o.sy,o.sz);dm.updateMatrix();im.setMatrixAt(n,dm.matrix)});
@@ -852,14 +881,12 @@ function netTick(dt){if(hit(P,.34)){stk+=dt;if(stk>.5){const p=onSpawn();P.x=p.x
 netT+=dt;if(netT>.045){netT=0;const ex=S.aa?dsd()*S.desync/58*.28+(S.aamode=='Spin'?Math.sin(ts*12)*S.aarange/180*.28:S.aamode=='Jitter'?(Math.random()<.5?1:-1)*S.aarange/180*.28:0):0;Net.send({t:'s',x:P.x,y:P.y,z:P.z,yaw,cr:P.cr||0,hp:P.hp,inv:(P.inv||0)>0?1:0,aa:S.aa?1:0,ex})}}
 Net.onOpen(()=>{const role=Net.host?0:1,sp=SPAWNS[role];S.online=true;S.v5=false;S.bots=1;S.mode='Deathmatch';S.dump=false;NETR=null;{let sx=MXf(sp[0]),sz=MZf(sp[1]);if(hit({x:sx,z:sz},.6)){const p=rnd();sx=p.x;sz=p.z}P.x=sx;P.z=sz}P.hp=100;P.inv=2;yaw=role?-Math.PI/2:Math.PI/2;notify('Online 1v1','Connected - first to kill wins the exchange','#8fe03a')});
 Net.on(m=>{if(m.t=='s')NETR=validateRemote(m);else if(m.t=='k'){if(P.inv>0)return;P.hp=0;notify('Friend killed you',m.h?'headshot':'body shot','#4fa3ff')}else if(m.t=='b'){beam(new V(...m.a),new V(...m.b),0xffa040,.3);snd(260)}
- /* Real round-trip time, rather than a number invented for the scoreboard.
-    The echo carries the sender's own clock value back untouched, so the two
-    machines never need a shared clock. */
- else if(m.t=='pi'){Net.send({t:'po',n:m.n})}
- else if(m.t=='po'){const r=performance.now()-m.n;if(r>=0&&r<10000)NETPING=NETPING?Math.round(NETPING*.7+r*.3):Math.round(r)}
 });
-let NETPING=0,_pingT=0;
-setInterval(()=>{if(ONLINE_MATCH&&Net&&Net.open){_pingT=performance.now();Net.send({t:'pi',n:_pingT})}},2000);
+/* net.js already runs a ping/pong on the data channel and keeps Net.ping, and
+   it answers those frames before they ever reach this handler - so read that
+   rather than running a second round trip over the same channel. */
+let NETPING=0;
+setInterval(()=>{if(ONLINE_MATCH&&Net&&Net.open&&Net.ping>0)NETPING=Math.round(Net.ping)},1000);
 /* Peer-side movement validation. In a peer to peer match nobody is authoritative,
    so each client polices what it is told about its opponent: a position update that
    implies a speed far above the ranked cap is clamped locally and reported once. */
@@ -1128,7 +1155,7 @@ kick=Math.max(0,Math.min(.07,kick-dt*.5));vm.position.z=-.35+kick;slash=Math.max
 /* player offsets ride on top of whatever the recoil and animation code just
    produced, rather than replacing it */
 vm.position.x+=S.vmx/200;vm.position.y+=S.vmy/200;vm.position.z+=S.vmz/200;vm.rotation.z=S.vmroll/120;FX.forEach(f=>{f.l-=dt;const k=Math.max(0,f.l/f.l0);f.g.traverse(o=>{if(o.isMesh)o.material.opacity=k*.6});if(f.fall){f.g.rotation.x=-Math.min(1,(1-k)*5)*1.45}});for(let i=FX.length-1;i>=0;i--)if(FX[i].l<=0){sc.remove(FX[i].g);FX.splice(i,1)}updFx(dt);tr=tr.filter(l=>{l.material.opacity=Math.max(0,l.life/l.l0)*.9;if((l.life-=dt)<=0){sc.remove(l);return false}return true});
-if(window.__cam)window.__cam(cam,P,bots);trackSun();shadowCadence();fpsWatch(dt);
+if(window.__cam)window.__cam(cam,P,bots);trackSun();shadowCadence();fpsWatch(dt);adaptRes(dt);
 /* Ready means playable, not "a frame reached the screen". The first frame
    renders while textures, the shadow map and the post chain are still warming,
    so posting on frame 1 cleared the launch screen about a second in and the
