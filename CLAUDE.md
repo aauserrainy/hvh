@@ -38,6 +38,7 @@ node server/e2e.js          # 30 browser tests, full platform (needs Playwright)
 node server/chat-e2e.js     # 24 browser tests, menu + chat
 node server/respawn-e2e.js  #  9 browser tests, 1v1 netcode
 node server/assets-e2e.js   # 15 browser tests, external model pipeline
+node server/cup-e2e.js      # 35 API tests, 1v1 tournament lifecycle
 ```
 
 Node **22.5+** is required — the backend uses the built-in `node:sqlite`.
