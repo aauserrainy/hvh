@@ -37,7 +37,7 @@ a{color:var(--a)}
 h1{margin:0;font-size:26px;letter-spacing:.14em;font-weight:800}
 h1 span{color:var(--g)}
 .sub{color:var(--m);margin:6px 0 20px;font-size:13px}
-label{display:block;font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--m);margin:0 0 6px}
+label{display:block;font-size:12px;letter-spacing:0;color:#8b94a3;margin:0 0 6px}
 .f{margin-bottom:14px}
 input[type=text],input[type=password],input[type=search],select,textarea{width:100%;padding:11px 12px;background:#0c0e11;
  border:1px solid #2b3039;border-radius:8px;outline:0;transition:border-color .15s,box-shadow .15s}
@@ -57,12 +57,30 @@ input.bad{border-color:var(--r);box-shadow:0 0 0 3px #ff546822}
 .msg.err{display:block;background:#2a1418;border:1px solid #5d2730;color:#ffb3bd}
 .msg.ok{display:block;background:#15240f;border:1px solid #2f5a1c;color:#cdf0a6}
 .msg.info{display:block;background:#101c2c;border:1px solid #244163;color:#bcd9ff}
+/* Server settings are plumbing. A first-time visitor was shown a URL field and
+   a red "unreachable" before they had done anything, which reads as a broken
+   site rather than a game. Folded away; the state still shows once opened. */
 .srv{margin-top:18px;padding-top:14px;border-top:1px solid var(--l);font-size:12px;color:var(--m)}
+.srv summary{cursor:pointer;list-style:none;color:#5f6673;font-size:12px;padding:2px 0}
+.srv summary::-webkit-details-marker{display:none}
+.srv summary:before{content:"\203A";display:inline-block;margin-right:7px;transition:transform .18s}
+.srv[open] summary:before{transform:rotate(90deg)}
+.srv summary:hover{color:var(--t)}
+.srv label{margin-top:10px}
+/* Playing without an account is the point of a browser game, so it is a button,
+   not a link underneath one. */
+.or{display:flex;align-items:center;gap:12px;margin:16px 0 12px;color:#4b515c;font-size:11px}
+.or:before,.or:after{content:"";flex:1;height:1px;background:var(--l)}
+.btn.wide{width:100%}
+.btn.ghost{background:#13161b;border:1px solid #2b313b;color:var(--t)}
+.btn.ghost:hover{background:#181c23;border-color:#3b434f}
+.hint{margin:9px 0 0;text-align:center;color:#5f6673;font-size:11.5px;line-height:1.5}
 .srv input{margin-top:6px;font-size:12px;padding:8px 10px}
 
 /* ---------- menu ---------- */
 #menu{flex:1;display:flex;flex-direction:column;min-height:0}
-header{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--l);background:#0e1013cc;backdrop-filter:blur(8px)}
+header{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--l);background:#0e1013cc;backdrop-filter:blur(8px);flex-wrap:wrap}
+
 .logo{font-size:17px;font-weight:800;letter-spacing:.16em}
 .logo span{color:var(--g)}
 .spacer{flex:1}
@@ -72,7 +90,7 @@ header{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:
 .who .nm{font-weight:700;line-height:1.2}
 .who .uid{font-size:11px;color:var(--m);letter-spacing:.06em}
 .tag{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;
- letter-spacing:.1em;text-transform:uppercase;border:1px solid}
+ letter-spacing:.02em;text-transform:none;border:1px solid}
 .tag.owner{color:var(--y);border-color:#6b5420;background:#2a2112}
 .tag.on{color:var(--g);border-color:#375e19;background:#182210}
 .tag.off{color:var(--m);border-color:var(--l);background:#16181c}
@@ -99,8 +117,11 @@ a.act:hover .dci{opacity:1}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:780px){.grid2{grid-template-columns:1fr}}
 .panel{border:1px solid var(--l);border-radius:var(--rad);background:#101216;overflow:hidden;margin-bottom:14px}
-.panel>h4{margin:0;padding:11px 14px;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--m);
- border-bottom:1px solid var(--l);background:#131519;display:flex;align-items:center;gap:8px}
+/* Tracked all-caps on every heading made each panel shout equally. The rule
+   underneath already says "this is a group"; the words only need to name it. */
+.panel>h4{margin:0;padding:11px 14px;font-size:12.5px;letter-spacing:0;text-transform:none;
+ font-weight:650;color:#9aa3b2;
+ border-bottom:1px solid var(--l);background:#111419;display:flex;align-items:center;gap:8px}
 .panel>h4 .spacer{flex:1}
 .panel .body{padding:14px}
 .row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #1c1f25}
@@ -108,7 +129,15 @@ a.act:hover .dci{opacity:1}
 .row .g{flex:1;min-width:0}
 .row .t1{font-weight:600}
 .row .t2{font-size:12px;color:var(--m)}
-.empty{color:var(--m);font-size:13px;padding:8px 0}
+.empty{color:var(--m);font-size:13px;padding:14px 2px;line-height:1.55}
+.empty b{display:block;color:#aab3c2;font-weight:600;margin-bottom:3px}
+/* A skeleton says "working"; the word "Loading…" sitting forever says "broken". */
+.skel{padding:10px 2px}
+.skel i{display:block;height:11px;border-radius:3px;margin:9px 0;
+ background:linear-gradient(90deg,#161a21 0%,#1e242e 40%,#161a21 80%) 0 0/300% 100%;
+ animation:shim 1.5s linear infinite}
+.skel i:nth-child(2){width:72%}.skel i:nth-child(3){width:85%}
+@keyframes shim{to{background-position:-300% 0}}
 .foot{padding:12px 20px;border-top:1px solid var(--l);color:#5e6672;font-size:11.5px;display:flex;gap:14px;align-items:center}
 
 /* ---------- modal ---------- */
@@ -155,7 +184,7 @@ tr:last-child td{border-bottom:0}
 .chatlog::-webkit-scrollbar{width:7px}
 .chatlog::-webkit-scrollbar-thumb{background:#2b3039;border-radius:4px}
 .chatside{border-left:1px solid var(--l);padding:10px;overflow-y:auto;height:328px}
-.sidehead{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:#5e6672;margin-bottom:8px}
+.sidehead{font-size:11px;letter-spacing:0;color:#5e6672;margin-bottom:8px}
 .ou{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:#aeb6c2;min-width:0}
 .ou i{width:5px;height:5px;border-radius:50%;background:var(--g);flex:none;box-shadow:0 0 5px var(--g)}
 .ou span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -279,6 +308,7 @@ tr:last-child td{border-bottom:0}
 #load.v3 .ring i:nth-child(5){animation-delay:.52s}
 /* the readout would sit on top of the bars where it is centred by default */
 #load.v3 .pct{top:auto;bottom:4px}
+#load.v5 .pct{top:auto;bottom:-6px}
 #load.v4 .pct{display:none}
 
 /* v4 - glitch wordmark */
@@ -292,11 +322,92 @@ tr:last-child td{border-bottom:0}
 @keyframes gl1{0%,90%{transform:none;opacity:0}92%{transform:translate(-3px,1px);opacity:.75}100%{opacity:0}}
 @keyframes gl2{0%,90%{transform:none;opacity:0}93%{transform:translate(3px,-1px);opacity:.75}100%{opacity:0}}
 
+/* v5 - crosshair converging on the centre, the one shape this game is about */
+#load.v5 .ring{width:124px;height:124px;border:0;background:none;animation:none;position:relative}
+#load.v5 .ring i{position:absolute;left:50%;top:50%;background:var(--a);border-radius:1px;
+ box-shadow:0 0 8px #4d8df088}
+#load.v5 .ring i:nth-child(1),#load.v5 .ring i:nth-child(2){width:3px;height:44px;margin-left:-1.5px;
+ animation:conv 1.5s cubic-bezier(.5,0,.3,1) infinite}
+#load.v5 .ring i:nth-child(3),#load.v5 .ring i:nth-child(4){height:3px;width:44px;margin-top:-1.5px;
+ animation:convH 1.5s cubic-bezier(.5,0,.3,1) infinite}
+#load.v5 .ring i:nth-child(1){transform-origin:50% 100%;top:0}
+#load.v5 .ring i:nth-child(2){transform-origin:50% 0;bottom:0;top:auto}
+#load.v5 .ring i:nth-child(3){left:0;transform-origin:100% 50%}
+#load.v5 .ring i:nth-child(4){right:0;left:auto;transform-origin:0 50%}
+/* the centre dot, so it reads as a crosshair even mid-animation */
+#load.v5 .ring i:nth-child(5){display:block;width:4px;height:4px;border-radius:50%;
+ margin:-2px 0 0 -2px;animation:dot 1.5s ease-in-out infinite}
+@keyframes dot{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.5)}}
+@keyframes conv{0%,100%{transform:scaleY(1);opacity:.55}50%{transform:scaleY(.6);opacity:1}}
+@keyframes convH{0%,100%{transform:scaleX(1);opacity:.55}50%{transform:scaleX(.6);opacity:1}}
+
+/* v6 - the round timer running down */
+#load.v6 .ring{width:118px;height:118px;border:2px solid #171d26;border-radius:50%;background:none;
+ animation:none}
+#load.v6 .ring:after{content:"";position:absolute;inset:-2px;border-radius:50%;
+ border:2px solid transparent;border-top-color:#8fe03a;border-right-color:#8fe03a;
+ animation:spin 2.4s cubic-bezier(.4,0,.2,1) infinite}
+#load.v6 .ring i{display:none}
+#load.v6 .pct{color:#8fe03a}
+
 /* the bar is shared, but only v1 and v4 show it */
-#load.v2 .bar,#load.v3 .bar{visibility:hidden}
+#load.v2 .bar,#load.v3 .bar,#load.v5 .bar,#load.v6 .bar{visibility:hidden}
+
+/* ---------- one orchestrated entrance ----------
+   A single sequence when the menu first appears, rather than every element
+   animating on every state change. The hero leads; the rest follows it. */
+@keyframes heroIn{from{opacity:0;transform:translateY(18px) scale(.99)}to{opacity:1;transform:none}}
+#menu:not(.hide) .hero{animation:heroIn .54s cubic-bezier(.2,.8,.26,1) both}
+#menu:not(.hide) .acts .act:nth-child(1){animation-delay:.1s}
+#menu:not(.hide) .acts .act:nth-child(2){animation-delay:.16s}
+#menu:not(.hide) .acts .act:nth-child(3){animation-delay:.22s}
+#menu:not(.hide) .pstat{animation:riseIn .42s cubic-bezier(.22,.78,.3,1) both}
+#menu:not(.hide) .pstat:nth-child(1){animation-delay:.18s}
+#menu:not(.hide) .pstat:nth-child(2){animation-delay:.24s}
+#menu:not(.hide) .pstat:nth-child(3){animation-delay:.3s}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ---------- hero ----------
+   The launcher now speaks the same language as the in-game panel it opens:
+   hairline frames instead of drop shadows, and the match colours (T amber,
+   CT blue) used where they carry meaning. */
+.hero{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:14px;margin-bottom:14px}
+.play{position:relative;overflow:hidden;text-align:left;cursor:pointer;
+ display:flex;flex-direction:column;gap:6px;padding:26px 28px 24px;
+ border:1px solid #243041;border-radius:var(--rad);color:var(--t);
+ background:
+  radial-gradient(130% 120% at 8% 0%,#17324f 0%,transparent 58%),
+  linear-gradient(180deg,#0f141b,#0a0d12);
+ transition:border-color .18s,transform .18s}
+.play:before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;
+ background:linear-gradient(180deg,var(--a),#8fe03a)}
+.play:hover{border-color:#3a5a80;transform:translateY(-2px)}
+.play .eyebrow{color:#6f7a8a;font-size:11px}
+.play .big{font-size:clamp(26px,3.4vw,38px);font-weight:800;letter-spacing:-.02em;line-height:1.05}
+.play .sm{color:var(--m);font-size:13px;max-width:44ch;line-height:1.5}
+.play .go{margin-top:12px;align-self:flex-start;background:var(--a);color:#06121f;
+ font-weight:700;font-size:13px;padding:9px 20px;border-radius:7px}
+.play:hover .go{background:#6aa6ff}
+
+.pulse{display:flex;flex-direction:column;border:1px solid var(--l);border-radius:var(--rad);
+ background:#0c0f14;overflow:hidden}
+.pstat{display:flex;align-items:baseline;gap:10px;padding:13px 16px;border-bottom:1px solid #161b23}
+.pstat b{font-size:21px;font-weight:700;color:var(--t);min-width:2ch;font-variant-numeric:tabular-nums}
+.pstat b:not(.has){color:#39404c;font-size:15px}
+.pstat span{color:var(--m);font-size:12.5px}
+.pstat.live b{color:var(--g)}
+.dsc{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:9px;
+ padding:13px;color:#aab3c6;text-decoration:none;font-size:13px;font-weight:600;
+ background:#11141a;transition:background .16s,color .16s}
+.dsc svg{width:17px;height:17px;fill:currentColor}
+.dsc:hover{background:#5865f2;color:#fff}
+
+/* secondary actions: same row, same weight as each other, clearly below the hero */
+.acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.act h3{font-size:14px;font-weight:650;letter-spacing:0;text-transform:none}
+.act:hover h3{letter-spacing:0}
 
 /* ---------- menu eye candy ----------
    All of it is transform/opacity only, so it composites on the GPU and never
@@ -342,7 +453,7 @@ tr:last-child td{border-bottom:0}
 /* ---------- boost toggle ---------- */
 .boost{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;
  border:1px solid var(--l);background:#14171c;color:var(--m);border-radius:999px;
- padding:5px 11px;font:600 10.5px Verdana,sans-serif;letter-spacing:.09em;transition:.16s}
+ padding:5px 11px;font:600 11.5px Verdana,sans-serif;letter-spacing:0;transition:.16s}
 .boost:hover{border-color:#3c4756;color:var(--t)}
 .boost .sw{width:26px;height:14px;border-radius:999px;background:#272b32;position:relative;transition:.18s}
 .boost .sw:after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;
@@ -350,6 +461,24 @@ tr:last-child td{border-bottom:0}
 .boost.on{color:var(--y);border-color:#6b5420}
 .boost.on .sw{background:#6b5420}
 .boost.on .sw:after{left:14px;background:var(--y)}
+
+/* ---------- responsive ----------
+   Declared last on purpose. These are plain class selectors, so a rule of the
+   same specificity written further down the sheet wins over a media query
+   written above it - which is exactly what happened: the phone layout was
+   being overridden by the desktop grid defined later. */
+@media (max-width:860px){
+ .hero{grid-template-columns:1fr}
+ .acts{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:620px){
+ header{gap:9px;padding:11px 13px}
+ header .spacer{display:none}
+ .acts{grid-template-columns:1fr}
+ .play{padding:20px 18px}
+ .play .big{font-size:28px}
+ .grid3{grid-template-columns:1fr}
+}
 @media (prefers-reduced-motion:reduce){
   *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
@@ -361,21 +490,24 @@ tr:last-child td{border-bottom:0}
   <section id="auth">
     <div class="card"><div class="bar"></div><div class="pad">
       <h1>rainy<span>.hvh</span></h1>
-      <p class="sub" id="authSub">Sign in to play online.</p>
+      <p class="sub" id="authSub">Counter-Strike style hack versus hack, in the browser. Nothing to install.</p>
       <div class="msg" id="authMsg"></div>
       <form id="authForm" autocomplete="on">
         <div class="f"><label for="u">Username</label><input id="u" type="text" autocomplete="username" maxlength="20" spellcheck="false"></div>
         <div class="f"><label for="p">Password</label><input id="p" type="password" autocomplete="current-password" maxlength="200"></div>
         <div class="f hide" id="cf"><label for="c">Confirm password</label><input id="c" type="password" autocomplete="new-password" maxlength="200"></div>
-        <button class="btn" id="authGo" type="submit">SIGN IN</button>
+        <button class="btn" id="authGo" type="submit">Sign in</button>
       </form>
+      <div class="or"><span>or</span></div>
+      <button class="btn ghost wide" id="offBtn" type="button">Play offline against bots</button>
+      <p class="hint">Straight into a match against bots. Settings save on this device.</p>
       <div class="swap" id="swap">No account? <b id="swapBtn">Create one</b></div>
-      <div class="swap" style="margin-top:8px"><b id="offBtn">Play offline instead</b></div>
-      <div class="srv">
+      <details class="srv">
+        <summary>Server settings</summary>
         <label for="apiUrl">Game server</label>
         <input id="apiUrl" type="text" spellcheck="false" placeholder="https://your-server.example.com">
-        <div style="margin-top:7px" id="srvState">—</div>
-      </div>
+        <div style="margin-top:7px" id="srvState">Checking</div>
+      </details>
     </div></div>
   </section>
 
@@ -399,48 +531,63 @@ tr:last-child td{border-bottom:0}
       </div>
       <span class="tag on" id="onTag"><i class="dot"></i>Online</span>
       <span class="tag owner hide" id="ownTag">Owner</span>
-      <button class="boost" id="boostBtn" title="Lower the graphics to raise your frame rate" aria-pressed="false"><span class="sw"></span>BOOST FPS</button>
+      <button class="boost" id="boostBtn" title="Lower the graphics to raise your frame rate" aria-pressed="false"><span class="sw"></span>Boost FPS</button>
       <button class="btn ghost sm" id="outBtn">Log out</button>
     </header>
     <main><div class="inner">
+      <!-- One dominant action. Five tiles of equal weight made the player hunt
+           for the thing everyone came here to do; the rest are secondary and
+           sized like it. The live counts beside it are real data, not decoration. -->
+      <div class="hero">
+        <button class="play" id="aQuick">
+          <span class="eyebrow">Ranked</span>
+          <span class="big">Find a match</span>
+          <span class="sm">Drops you straight into a lobby that needs a player.</span>
+          <span class="go">Play now</span>
+        </button>
+        <div class="pulse">
+          <div class="pstat"><b id="pOnline">—</b><span>playing now</span></div>
+          <div class="pstat"><b id="pLobbies">—</b><span>lobbies open</span></div>
+          <div class="pstat"><b id="pCups">—</b><span>tournaments live</span></div>
+          <a class="dsc" id="aDiscord" href="https://discord.gg/ReVpjYhACw" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.3 5.3A17 17 0 0 0 15.1 4l-.2.4a15.7 15.7 0 0 1 3.7 1.2 13 13 0 0 0-11.2 0A15.8 15.8 0 0 1 11.1 4.4L10.9 4a17 17 0 0 0-4.2 1.3C3.9 9.5 3.2 13.6 3.5 17.6a17 17 0 0 0 5.2 2.6l.9-1.6a11 11 0 0 1-1.7-.8l.4-.3a12 12 0 0 0 9.4 0l.4.3a11 11 0 0 1-1.7.8l.9 1.6a17 17 0 0 0 5.2-2.6c.4-4.6-.6-8.7-3.2-12.3zM9.5 15.3c-1 0-1.9-.9-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1zm5 0c-1 0-1.9-.9-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1z"/></svg>
+            Join the Discord</a>
+        </div>
+      </div>
       <div class="acts">
-        <button class="act" style="--ac:#4d8df0" id="aQuick"><h3>JOIN OPEN ONLINE MATCH</h3><p>Find a lobby that needs a player and drop straight in.</p></button>
-        <button class="act" style="--ac:#8fe03a" id="aHost"><h3>HOST 1V1</h3><p>Open a match and send a friend the code.</p></button>
-        <button class="act" style="--ac:#ffc04d" id="aOffline"><h3>JOIN OFFLINE</h3><p>Play against bots. Every sandbox feature unlocked.</p></button>
-        <button class="act" style="--ac:#a057e8" id="aTourn"><h3>TOURNAMENTS</h3><p>Browse brackets and register a team.</p></button>
-        <a class="act" style="--ac:#5865f2" id="aDiscord" href="https://discord.gg/ReVpjYhACw" target="_blank" rel="noopener noreferrer">
-          <h3><svg class="dci" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.3 5.3A17 17 0 0 0 15.1 4l-.2.4a15.7 15.7 0 0 1 3.7 1.2 13 13 0 0 0-11.2 0A15.8 15.8 0 0 1 11.1 4.4L10.9 4a17 17 0 0 0-4.2 1.3C3.9 9.5 3.2 13.6 3.5 17.6a17 17 0 0 0 5.2 2.6l.9-1.6a11 11 0 0 1-1.7-.8l.4-.3a12 12 0 0 0 9.4 0l.4.3a11 11 0 0 1-1.7.8l.9 1.6a17 17 0 0 0 5.2-2.6c.4-4.6-.6-8.7-3.2-12.3zM9.5 15.3c-1 0-1.9-.9-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1zm5 0c-1 0-1.9-.9-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1z"/></svg>JOIN DISCORD</h3>
-          <p>Find people to play, report bugs, hear about tournaments.</p></a>
+        <button class="act" id="aHost"><h3>Host a 1v1</h3><p>Open a match and send a friend the code.</p></button>
+        <button class="act" id="aOffline"><h3>Play offline</h3><p>Bots, and every sandbox feature unlocked.</p></button>
+        <button class="act" id="aTourn"><h3>Tournaments</h3><p>Browse brackets and register a team.</p></button>
       </div>
       <div class="grid3">
         <div class="col">
           <div class="panel"><h4>Open lobbies<span class="spacer"></span><button class="btn ghost sm" id="refLob">Refresh</button></h4>
-            <div class="body" id="lobbies"><div class="empty">Loading…</div></div></div>
+            <div class="body" id="lobbies"><div class="skel"><i></i><i></i><i></i></div></div></div>
           <div class="panel"><h4>Join by code</h4><div class="body">
-            <div style="display:flex;gap:8px"><input id="joinCode" type="text" maxlength="6" placeholder="MATCH CODE"
-              style="text-transform:uppercase;letter-spacing:.24em;text-align:center">
-              <button class="btn sm" id="joinGo" style="width:110px">JOIN</button></div>
+            <div style="display:flex;gap:8px"><input id="joinCode" type="text" maxlength="6" placeholder="Match code"
+              style="text-transform:uppercase;letter-spacing:.18em;text-align:center">
+              <button class="btn sm" id="joinGo" style="width:110px">Join</button></div>
             <div class="msg" id="joinMsg" style="margin:12px 0 0"></div></div></div>
-          <div class="panel"><h4>Recent matches</h4><div class="body" id="history"><div class="empty">—</div></div></div>
-          <div class="panel"><h4>Tournaments</h4><div class="body" id="tourns"><div class="empty">Loading…</div></div></div>
+          <div class="panel"><h4>Recent matches</h4><div class="body" id="history"><div class="empty"><b>No matches yet</b>Play one and it shows up here.</div></div></div>
+          <div class="panel"><h4>Tournaments</h4><div class="body" id="tourns"><div class="skel"><i></i><i></i></div></div></div>
         </div>
         <div class="col">
           <div class="panel chatpanel"><h4>Lobby chat<span class="spacer"></span>
               <span class="cnt" id="onCount">0 online</span></h4>
             <div class="chatwrap">
-              <div class="chatlog" id="chatlog"><div class="empty">Connecting…</div></div>
+              <div class="chatlog" id="chatlog"><div class="empty">Connecting to chat</div></div>
               <div class="chatside"><div class="sidehead">Online</div><div id="onlineList"></div></div>
             </div>
             <form class="chatform" id="chatForm">
               <input id="chatIn" type="text" maxlength="300" placeholder="Say something…" autocomplete="off">
-              <button class="btn sm" type="submit" id="chatGo">SEND</button>
+              <button class="btn sm" type="submit" id="chatGo">Send</button>
             </form>
             <div class="chaterr" id="chatErr"></div>
           </div>
         </div>
       </div>
     </div></main>
-    <footer class="foot"><span id="ver">v—</span><span class="spacer" style="flex:1"></span><span id="srvFoot"></span></footer>
+    <footer class="foot"><span id="ver"></span><span class="spacer" style="flex:1"></span><span id="srvFoot"></span></footer>
   </section>
 </div>
 
@@ -460,9 +607,13 @@ let CHAT_BUSY = false, CHAT_SEEN = new Set();
 let mode = 'login';
 function setMode(m){
   mode = m;
-  $('authSub').textContent = m === 'login' ? 'Sign in to play online.' : 'Pick a name and a password. That is all.';
+  /* A stranger arriving from a link has no idea what this is, so say it once
+     and keep saying it - the mode only changes the instruction after it. */
+  $('authSub').textContent = m === 'login'
+    ? 'Counter-Strike style hack versus hack, in the browser. Sign in to play online.'
+    : 'Counter-Strike style hack versus hack, in the browser. Pick a name and a password.';
   $('cf').classList.toggle('hide', m === 'login');
-  $('authGo').textContent = m === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT';
+  $('authGo').textContent = m === 'login' ? 'Sign in' : 'Create account';
   $('swap').innerHTML = m === 'login' ? 'No account? <b id="swapBtn">Create one</b>' : 'Already have one? <b id="swapBtn">Sign in</b>';
   $('swapBtn').onclick = () => setMode(m === 'login' ? 'register' : 'login');
   $('p').setAttribute('autocomplete', m === 'login' ? 'current-password' : 'new-password');
@@ -526,7 +677,7 @@ async function enterMenu(){
   $('nm').textContent = u.username;
   $('uid').textContent = 'UID ' + u.uid;
   $('ownTag').classList.toggle('hide', !u.owner);
-  $('ver').textContent = 'v' + (me.version || '—');
+  $('ver').textContent = me.version ? 'v' + me.version : '';
   $('srvFoot').textContent = API.base.replace(/^https?:\/\//, '');
   if (u.owner && !$('adminBtn')) {
     const b = el('button', { class: 'act', style: '--ac:#ffc04d', id: 'adminBtn', onclick: () => location.href = 'admin.html' },
@@ -587,7 +738,9 @@ async function loadLobbies(){
           el('div', { class: 't2' }, m.n + '/' + m.cap + ' players · opened ' + ago(m.created))),
         el('button', { class: 'btn sm', onclick: () => quickJoinId(m) }, 'Join'))
     ) : [el('div', { class: 'empty' }, 'No open lobbies. Host one and send a friend the code.')]));
-  } catch (e) { box.replaceChildren(el('div', { class: 'empty' }, e.message)); }
+    setPulse('pLobbies', r.matches.length);
+    setPulse('pOnline', r.matches.reduce((a, m) => a + (m.n || 0), 0));
+  } catch (e) { box.replaceChildren(el('div', { class: 'empty' }, e.message)); setPulse('pLobbies', null); setPulse('pOnline', null); }
 }
 $('refLob').onclick = loadLobbies;
 
@@ -675,6 +828,18 @@ function paintBoost(){
    per animation frame and expressed as a transform, so it is a compositor job
    and never touches layout. Skipped entirely for reduced-motion and for touch,
    where there is no pointer to follow. */
+/* The hero's counters. These read from what the lobby and tournament polls
+   already fetch, so they cost no extra requests - and they stay blank rather
+   than showing 0 until a real number arrives, because a confident "0 playing
+   now" on a failed request is worse than silence. */
+function setPulse(key, n){
+  const el = $(key); if (!el) return;
+  if (n === null || n === undefined) { el.textContent = '·'; el.classList.remove('has'); return; }
+  el.textContent = String(n); el.classList.add('has');
+  const row = el.parentElement;
+  if (row) row.classList.toggle('live', n > 0);
+}
+
 function initParallax(){
   const fx = $('bgfx'); if (!fx) return;
   if (matchMedia('(prefers-reduced-motion:reduce)').matches) return;
@@ -717,7 +882,7 @@ let _pctTimer = null;
 function loadShow(){
   const el = $('load'); if (!el) return;
   /* pick a variant per launch so the wait is not the same screen every time */
-  const v = 1 + Math.floor(Math.random() * 4);
+  const v = 1 + Math.floor(Math.random() * 6);
   el.className = 'v' + v;
   /* the percentage eases toward 90 and stops: it reflects elapsed time, not real
      progress, so it must never claim 100 and then sit there. The game clearing
@@ -908,8 +1073,9 @@ async function loadTournaments(){
         el('div', { class: 'g' }, el('div', { class: 't1' }, t.name),
           el('div', { class: 't2' }, t.team_size + 'v' + t.team_size + ' · ' + t.team_count + '/' + t.max_teams + ' teams · ' + t.status)),
         el('button', { class: 'btn ghost sm', onclick: () => openTournament(t.id) }, 'View'))
-    ) : [el('div', { class: 'empty' }, 'No tournaments yet.')]));
-  } catch (e) { box.replaceChildren(el('div', { class: 'empty' }, e.message)); }
+    ) : [el('div', { class: 'empty' }, el('b', {}, 'No tournaments yet'), 'The owner can open one from the dashboard.')]));
+    setPulse('pCups', r.tournaments.filter(t => t.status !== 'done').length);
+  } catch (e) { box.replaceChildren(el('div', { class: 'empty' }, e.message)); setPulse('pCups', null); }
 }
 $('aTourn').onclick = async () => {
   modal('Tournaments', el('div', { class: 'empty' }, 'Loading…'));
