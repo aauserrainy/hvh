@@ -930,11 +930,15 @@ function launch(offline, m){
     ? { offline: true, boost: BOOST }
     : { offline: false, api: API.base, token: API.token, match: m.id, uid: ME.user.uid,
         players: m.players, host: m.host === ME.user.uid, boost: BOOST,
-        name: (ME.user && ME.user.username) || '' };
+        name: (ME.user && ME.user.username) || '',
+        /* tournament matches carry their own rules and the side the server put
+           you on, so the game does not have to ask the backend again */
+        winRounds: m.win_rounds || 0, bracket: m.bracket_id || 0,
+        team: (m.players || []).find(p => p.uid === ME.user.uid)?.team || '' };
   loadShow();
   setTimeout(() => loadHide(true), 25000);          /* backstop only */
   sessionStorage.setItem('hvh_session_cfg', JSON.stringify(cfg));
-  g.src = 'csgo.html?v=50&mode=' + (offline ? 'offline' : 'online');
+  g.src = 'csgo.html?v=51&mode=' + (offline ? 'offline' : 'online');
   g.style.display = 'block';
   $('leave').style.display = 'block';
   const tag = $('modeTag');
@@ -965,7 +969,7 @@ function modal(title, body, keep){
       el('div', { class: 'mb' }, body)));
   document.body.append(OV);
 }
-function closeModal(){ if (OV) { OV.remove(); OV = null; } }
+function closeModal(){ cupStopPoll(); if (OV) { OV.remove(); OV = null; } }
 const alertBox = t => modal('Heads up', el('p', { style: 'margin:0' }, t));
 
 $('outBtn').onclick = () => { clearInterval(POLL); clearInterval(CHAT_POLL); API.logout(); show('auth'); setMode('login'); note('Signed out.', 'info'); };
@@ -1090,6 +1094,68 @@ $('aTourn').onclick = async () => {
       : el('div', { class: 'empty' }, 'No tournaments have been created yet.'));
   } catch (e) { modal('Tournaments', el('div', { class: 'empty' }, e.message)); }
 };
+/* ---------- tournament match lobby ----------
+   Polls the bracket match this player is drawn into, shows who has turned up on
+   each side, and launches the game the moment the server says the match is live.
+   The server owns that decision - the client only asks to be let in, and is
+   checked against team membership - so a client cannot start a match early or
+   put itself into someone else's draw. */
+let CUP_POLL = null;
+function cupStopPoll(){ if (CUP_POLL) { clearInterval(CUP_POLL); CUP_POLL = null; } }
+
+async function cupLobby(t, b){
+  const box = $('cupJoin'); if (!box) { cupStopPoll(); return; }
+  const side = (team, label) => el('div', { style: 'flex:1;min-width:0' },
+    el('div', { class: 't2', style: 'color:var(--m);margin-bottom:5px' }, team.name || label),
+    ...(team.players || []).map(p => el('div', {
+      class: 't1',
+      style: 'display:flex;align-items:center;gap:7px;padding:2px 0;' + (p.joined ? '' : 'color:#5f6673')
+    }, el('span', { style: 'width:7px;height:7px;border-radius:50%;background:' + (p.joined ? 'var(--g)' : '#333a45') }), p.username)));
+
+  const render = (lob, msg) => {
+    box.replaceChildren(el('div', { class: 'panel' },
+      el('h4', {}, 'Your match', el('span', { class: 'spacer' }),
+        el('span', { class: 't2', style: 'color:var(--m)' },
+          lob ? lob.ready + '/' + lob.need + ' ready · first to ' + lob.win_rounds : '')),
+      el('div', { class: 'body' },
+        lob ? el('div', { style: 'display:flex;gap:16px;margin-bottom:12px' },
+          side(lob.teams.a, 'Team A'), side(lob.teams.c, 'Team B')) : null,
+        msg ? el('div', { class: 'msg err', style: 'display:block;margin-bottom:10px' }, msg) : null,
+        (lob && lob.match && lob.match.status === 'live')
+          ? el('button', { class: 'btn sm', onclick: () => { cupStopPoll(); closeModal && closeModal(); launch(false, lob.match); } }, 'Enter match')
+          : el('button', { class: 'btn sm', onclick: join },
+              lob && lob.match ? 'Waiting for your team…' : 'Join match'))));
+  };
+
+  async function refresh(){
+    try {
+      const r = await API.get('/api/tournament/match?match=' + b.id);
+      render(r.lobby, '');
+      /* the server flips the match live when both teams are complete; everyone
+         still sitting here is taken in automatically */
+      if (r.lobby && r.lobby.match && r.lobby.match.status === 'live' &&
+          (r.lobby.match.players || []).some(p => p.uid === ME.user.uid)) {
+        cupStopPoll(); closeModal && closeModal(); launch(false, r.lobby.match);
+      }
+    } catch (e) { render(null, e.message); }
+  }
+
+  async function join(){
+    try {
+      const r = await API.post('/api/tournament/match/join', { match: b.id });
+      render(r.lobby, '');
+      cupStopPoll();
+      CUP_POLL = setInterval(refresh, 2000);
+      if (r.lobby && r.lobby.match && r.lobby.match.status === 'live') {
+        cupStopPoll(); closeModal && closeModal(); launch(false, r.lobby.match);
+      }
+    } catch (e) { render(null, e.message); }
+  }
+
+  render(null, '');
+  refresh();
+}
+
 async function openTournament(id){
   modal('Tournament', el('div', { class: 'empty' }, 'Loading…'));
   try {
@@ -1102,7 +1168,17 @@ async function openTournament(id){
         ...rounds[r].map(b => el('div', { class: 'bm' },
           el('div', { class: b.winner && b.winner === b.team_a ? 'w' : '' }, nameOf(b.team_a), el('span', { class: 'sc' }, b.status === 'done' ? b.score_a : '')),
           el('div', { class: b.winner && b.winner === b.team_b ? 'w' : '' }, nameOf(b.team_b), el('span', { class: 'sc' }, b.status === 'done' ? b.score_b : ''))))))) : null;
+    /* Your own match in this bracket, if you have one that is still to be
+       played. The Join button only exists when there is something to join:
+       you are on a team, both opponents are known, and the tournament has
+       actually reached the bracket. */
+    const myMatch = t.myTeam && ['bracket', 'live'].includes(t.status)
+      ? t.bracket.find(b => b.status !== 'done' && b.team_a && b.team_b &&
+                            (b.team_a === t.myTeam || b.team_b === t.myTeam))
+      : null;
+
     const canReg = t.status === 'open' && !t.myTeam;
+    if (myMatch) setTimeout(() => cupLobby(t, myMatch), 0);
     const teamInput = el('input', { type: 'text', maxlength: '32', placeholder: 'Team name' });
     const out = el('div', { class: 'msg' });
     modal(t.name, el('div', {},
@@ -1115,6 +1191,7 @@ async function openTournament(id){
             try { await API.post('/api/tournament/register', { id: t.id, team: teamInput.value }); openTournament(t.id); }
             catch (e) { out.className = 'msg err'; out.textContent = e.message; }
           } }, 'REGISTER')), out) : null,
+      myMatch ? el('div', { id: 'cupJoin', style: 'margin:12px 0' }) : null,
       t.myTeam ? el('div', { class: 'msg info', style: 'display:block' }, 'You are registered.',
         ['open', 'draft'].includes(t.status) ? el('b', { style: 'cursor:pointer;margin-left:8px', onclick: async () => {
           try { await API.post('/api/tournament/leave', { id: t.id }); openTournament(t.id); } catch (e) {}

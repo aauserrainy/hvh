@@ -188,7 +188,15 @@ const MIGRATIONS = [
      created INTEGER NOT NULL,
      hidden  INTEGER NOT NULL DEFAULT 0
    );
-   CREATE INDEX idx_chat_created ON chat(created);`
+   CREATE INDEX idx_chat_created ON chat(created);`,
+
+  // 7 - tournament match lobbies: which side a player is on, and how many rounds
+  //     win the match. `matches.bracket_id` and `bracket.match_id` already
+  //     existed from migrations 2 and 3 but were never written to; the
+  //     tournament lobby is what finally links the two.
+  `ALTER TABLE match_players ADD COLUMN team TEXT;
+   ALTER TABLE matches ADD COLUMN win_rounds INTEGER NOT NULL DEFAULT 12;
+   CREATE INDEX IF NOT EXISTS idx_match_bracket ON matches(bracket_id);`
 ];
 
 function open(file) {
