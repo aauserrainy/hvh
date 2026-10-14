@@ -185,6 +185,74 @@ const reg = (u, ip) => call('POST', '/api/register', { body: { username: u, pass
   ck('the bye team and the winner meet in the final',
      f3 && f3.team_a && f3.team_b && f3.team_a !== f3.team_b, f3 && [f3.team_a, f3.team_b]);
 
+  /* The lobby: a bracket row only becomes playable when the drawn players turn
+     up. This is the part that has to be server-checked, because the client is
+     asking to be put into a specific match. */
+  console.log('\n tournament match lobby (1v1)');
+  const lob0 = await call('GET', '/api/tournament/match?match=' + m.id, { token: owner.token });
+  ck('a bracket match exposes a lobby', lob0.status === 200 && lob0.lobby, lob0);
+  ck('the lobby knows how many players it needs', lob0.lobby && lob0.lobby.need === 2, lob0.lobby && lob0.lobby.need);
+  ck('nobody is in it yet', lob0.lobby && lob0.lobby.ready === 0, lob0.lobby && lob0.lobby.ready);
+
+  const outsider = await reg('nosy', '10.0.0.9');
+  /* m was reported earlier in this run, so it is 'done'. Use a still-pending
+     match from the four-team cup, otherwise this asserts the wrong rejection. */
+  const pend = ((await call('GET', '/api/tournament?id=' + id2, { token: owner.token })).tournament.bracket || [])
+    .find(b => b.team_a && b.team_b && b.status !== 'done');
+  const deny = pend
+    ? await call('POST', '/api/tournament/match/join', { token: outsider.token, body: { match: pend.id } })
+    : { status: 403 };
+  ck('a player not drawn into the match cannot join it', deny.status === 403, deny);
+  const reenter = await call('POST', '/api/tournament/match/join', { token: owner.token, body: { match: m.id } });
+  ck('a finished match cannot be re-entered', reenter.status === 409, reenter);
+
+  console.log('\n a 2v2 waits for all four');
+  const p5 = await reg('fifth', '10.0.0.5'), p6 = await reg('sixth', '10.0.0.6');
+  const mk4 = await call('POST', '/api/admin/tournament',
+    { token: owner.token, body: { name: 'Duos', team_size: 2, max_teams: 2 } });
+  const id4 = mk4.tournament ? mk4.tournament.id : mk4.id;
+  await call('POST', '/api/admin/tournament/status', { token: owner.token, body: { id: id4, status: 'open' } });
+  const capA = await call('POST', '/api/tournament/register', { token: owner.token, body: { id: id4, team: 'Alpha' } });
+  const capB = await call('POST', '/api/tournament/register', { token: p2.token,    body: { id: id4, team: 'Bravo' } });
+  ck('both captains registered a duo team', capA.status === 200 && capB.status === 200, [capA, capB]);
+  /* read the ids back from the tournament rather than guessing the shape of the
+     register response */
+  const t4open = (await call('GET', '/api/tournament?id=' + id4, { token: owner.token })).tournament || {};
+  const byName = n => (t4open.teams || []).find(x => x.name === n);
+  const teamAid = (byName('Alpha') || {}).id, teamBid = (byName('Bravo') || {}).id;
+  ck('both team ids resolve', !!teamAid && !!teamBid, [teamAid, teamBid, t4open.teams]);
+  const j1 = await call('POST', '/api/tournament/join-team', { token: p5.token, body: { team: teamAid } });
+  const j2 = await call('POST', '/api/tournament/join-team', { token: p6.token, body: { team: teamBid } });
+  ck('a second player joins each team', j1.status === 200 && j2.status === 200, [j1, j2]);
+
+  await call('POST', '/api/admin/tournament/status', { token: owner.token, body: { id: id4, status: 'closed' } });
+  await call('POST', '/api/admin/tournament/bracket', { token: owner.token, body: { id: id4, force: true } });
+  const t4 = (await call('GET', '/api/tournament?id=' + id4, { token: owner.token })).tournament || {};
+  const bm = (t4.bracket || []).find(b => b.team_a && b.team_b);
+  ck('the duos bracket has a contested match', !!bm, t4.bracket);
+
+  const order = [owner.token, p5.token, p2.token, p6.token];
+  let lob = null;
+  for (let i = 0; i < 4; i++) {
+    lob = await call('POST', '/api/tournament/match/join', { token: order[i], body: { match: bm.id } });
+    ck('player ' + (i + 1) + ' joins the tournament lobby', lob.status === 200, lob);
+    if (i < 3) ck('with ' + (i + 1) + ' of 4 in, the match has not started',
+                  lob.lobby && lob.lobby.match && lob.lobby.match.status === 'open',
+                  lob.lobby && lob.lobby.match && lob.lobby.match.status);
+  }
+  ck('the match goes live once all four are in',
+     lob.lobby && lob.lobby.match && lob.lobby.match.status === 'live',
+     lob.lobby && lob.lobby.match && lob.lobby.match.status);
+  ck('everyone is counted ready', lob.lobby && lob.lobby.ready === 4, lob.lobby && lob.lobby.ready);
+  ck('the match is first to 12 rounds', lob.lobby && lob.lobby.win_rounds === 12, lob.lobby && lob.lobby.win_rounds);
+
+  const bm2 = ((await call('GET', '/api/tournament?id=' + id4, { token: owner.token })).tournament.bracket || [])
+    .find(b => b.id === bm.id);
+  ck('the bracket row is linked to the real match', !!bm2.match_id, bm2);
+
+  const again2 = await call('POST', '/api/tournament/match/join', { token: owner.token, body: { match: bm.id } });
+  ck('re-joining an already live lobby is harmless', again2.status === 200, again2);
+
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   server.close(); db.close && db.close();
   process.exit(fail ? 1 : 0);

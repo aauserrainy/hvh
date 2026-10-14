@@ -178,12 +178,13 @@ function build(ctx) {
 
   function matchView(m, viewerUid) {
     const players = db.prepare(
-      `SELECT p.uid, p.slot, u.username FROM match_players p JOIN users u ON u.uid = p.uid
+      `SELECT p.uid, p.slot, p.team, u.username FROM match_players p JOIN users u ON u.uid = p.uid
         WHERE p.match_id = ? ORDER BY p.slot`).all(m.id);
     return {
       id: m.id, mode: m.mode, status: m.status, cap: m.cap,
       code: (viewerUid && players.some(p => p.uid === viewerUid)) ? m.code : undefined,
-      host: m.host_uid, players, created: m.created
+      host: m.host_uid, players, created: m.created,
+      win_rounds: m.win_rounds, bracket_id: m.bracket_id
     };
   }
   const touchMatch = id => db.prepare('UPDATE matches SET touched = ? WHERE id = ?').run(now(), id);
@@ -837,6 +838,102 @@ function build(ctx) {
     });
     audit(g.a.user.uid, 'bracket_result', m.id, 'winner=' + winner);
     return ok();
+  };
+
+  /* ============ TOURNAMENT MATCH LOBBY ============
+     A bracket match is only a record until the players actually turn up. These
+     two routes turn it into a real lobby: the first player on either side to
+     press Join creates the match and links it to the bracket row, everyone else
+     joins the same one, and the match goes live by itself the moment both teams
+     are complete. Membership is checked server side against team_members, so a
+     client cannot put itself into a match it was never drawn into. */
+
+  function bracketLobby(b, viewerUid) {
+    const t = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(b.tournament_id);
+    const side = (teamId) => db.prepare(
+      `SELECT u.uid, u.username,
+              (SELECT COUNT(*) FROM match_players p WHERE p.match_id = ? AND p.uid = mm.uid) joined
+         FROM team_members mm JOIN users u ON u.uid = mm.uid
+        WHERE mm.team_id = ? ORDER BY u.uid`).all(b.match_id || '', teamId);
+    const a = side(b.team_a), c = side(b.team_b);
+    const m = b.match_id ? db.prepare('SELECT * FROM matches WHERE id = ?').get(b.match_id) : null;
+    const nameOf = id => (db.prepare('SELECT name FROM teams WHERE id = ?').get(id) || {}).name || null;
+    return {
+      bracket: b.id, round: b.round, slot: b.slot, status: b.status,
+      team_size: t ? t.team_size : 1,
+      win_rounds: m ? m.win_rounds : 12,
+      teams: { a: { id: b.team_a, name: nameOf(b.team_a), players: a },
+               c: { id: b.team_b, name: nameOf(b.team_b), players: c } },
+      ready: a.filter(p => p.joined).length + c.filter(p => p.joined).length,
+      need: (t ? t.team_size : 1) * 2,
+      match: m ? matchView(m, viewerUid) : null
+    };
+  }
+
+  /* Which of the two drawn teams this player belongs to, or null. */
+  function sideOf(b, uid) {
+    const row = db.prepare(
+      `SELECT mm.team_id FROM team_members mm WHERE mm.uid = ? AND mm.team_id IN (?, ?)`).get(uid, b.team_a, b.team_b);
+    return row ? row.team_id : null;
+  }
+
+  R['GET /api/tournament/match'] = (req) => {
+    const a = auth(req);
+    const b = db.prepare('SELECT * FROM bracket WHERE id = ?').get(U.toInt(req.query.match, 0));
+    if (!b) return err(404, 'Bracket match not found');
+    return ok({ lobby: bracketLobby(b, a ? a.user.uid : null) });
+  };
+
+  R['POST /api/tournament/match/join'] = (req) => {
+    const a = needAuth(req); if (!a) return err(401, 'Not signed in');
+    if (a.user.banned) return err(403, 'This account is banned.');
+    sweep();
+    const b = db.prepare('SELECT * FROM bracket WHERE id = ?').get(U.toInt(req.body.match, 0));
+    if (!b) return err(404, 'Bracket match not found');
+    if (!b.team_a || !b.team_b) return err(409, 'This match is still waiting on an opponent');
+    if (b.status === 'done') return err(409, 'This match has already been played');
+
+    const t = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(b.tournament_id);
+    if (!t) return err(404, 'Tournament not found');
+    if (!['bracket', 'live'].includes(t.status))
+      return err(409, 'The tournament is not ready to be played yet');
+
+    const myTeam = sideOf(b, a.user.uid);
+    if (!myTeam) return err(403, 'You are not on either team in this match');
+
+    const r = tx(db, () => {
+      const fresh = db.prepare('SELECT * FROM bracket WHERE id = ?').get(b.id);
+      let m = fresh.match_id ? db.prepare('SELECT * FROM matches WHERE id = ?').get(fresh.match_id) : null;
+      /* A finished or swept match must not trap the bracket row forever. */
+      if (m && m.status === 'done') m = null;
+      if (!m) {
+        const size = t.team_size, mode = size + 'v' + size;
+        const id = U.matchId();
+        let code = U.joinCode();
+        for (let i = 0; i < 5 && db.prepare(`SELECT 1 FROM matches WHERE code = ? AND status = 'open'`).get(code); i++) code = U.joinCode();
+        db.prepare(`INSERT INTO matches(id, code, host_uid, mode, status, cap, visible, created, touched, bracket_id, win_rounds)
+                    VALUES(?,?,?,?,'open',?,0,?,?,?,?)`)
+          .run(id, code, a.user.uid, mode, (MODES[mode] || size * 2), now(), now(), fresh.id, 12);
+        db.prepare('UPDATE bracket SET match_id = ? WHERE id = ?').run(id, fresh.id);
+        m = db.prepare('SELECT * FROM matches WHERE id = ?').get(id);
+      }
+      if (db.prepare('SELECT 1 FROM match_players WHERE match_id = ? AND uid = ?').get(m.id, a.user.uid))
+        return { m: db.prepare('SELECT * FROM matches WHERE id = ?').get(m.id) };
+      if (m.status !== 'open') return { e: 'That match has already started' };
+      const n = db.prepare('SELECT COUNT(*) n FROM match_players WHERE match_id = ?').get(m.id).n;
+      if (n >= m.cap) return { e: 'That match is full' };
+      leaveAll(a.user.uid);
+      db.prepare('INSERT INTO match_players(match_id, uid, slot, joined, team) VALUES(?,?,?,?,?)')
+        .run(m.id, a.user.uid, n, now(), myTeam === fresh.team_a ? 'T' : 'CT');
+      const total = db.prepare('SELECT COUNT(*) n FROM match_players WHERE match_id = ?').get(m.id).n;
+      if (total >= m.cap) db.prepare(`UPDATE matches SET status='live', started=?, touched=? WHERE id=?`).run(now(), now(), m.id);
+      else touchMatch(m.id);
+      return { m: db.prepare('SELECT * FROM matches WHERE id = ?').get(m.id) };
+    });
+    if (r.e) return err(409, r.e);
+    audit(a.user.uid, 'cup_match_join', r.m.id, 'bracket=' + b.id);
+    const fresh = db.prepare('SELECT * FROM bracket WHERE id = ?').get(b.id);
+    return ok({ lobby: bracketLobby(fresh, a.user.uid) });
   };
 
   R['POST /api/admin/tournament/schedule'] = (req) => {

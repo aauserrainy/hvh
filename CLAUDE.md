@@ -38,7 +38,7 @@ node server/e2e.js          # 30 browser tests, full platform (needs Playwright)
 node server/chat-e2e.js     # 24 browser tests, menu + chat
 node server/respawn-e2e.js  #  9 browser tests, 1v1 netcode
 node server/assets-e2e.js   # 15 browser tests, external model pipeline
-node server/cup-e2e.js      # 35 API tests, 1v1 tournament lifecycle
+node server/cup-e2e.js      # 56 API tests, tournament lifecycle + match lobby
 ```
 
 Node **22.5+** is required — the backend uses the built-in `node:sqlite`.
@@ -86,6 +86,15 @@ Node **22.5+** is required — the backend uses the built-in `node:sqlite`.
   lower bound.
 - **Bump the `?v=` query** on `app.js` / `net.js` / `csgo.html` when you change
   them, or Pages and browsers serve the stale file.
+- **Tournament lobbies are server-gated.** `POST /api/tournament/match/join`
+  checks `team_members` for the bracket row's two teams, so a client cannot put
+  itself into a draw it is not in. The first joiner creates the match and links
+  it both ways (`bracket.match_id` / `matches.bracket_id`); the match flips to
+  `live` only when both teams are complete.
+- **Online is still one remote peer.** `NETR` is a single object, not a list, so
+  2v2-5v5 lobbies fill and go live but the match cannot carry more than two
+  players. The lobby, HUD, scoreboard and teams are all ready for it; the
+  transport is not. Do not describe team modes as playable.
 - **UID 1 is the owner**, recorded once in the `meta` table at bootstrap. Deleting
   or banning UID 1 does not promote anyone else.
 - **`TRUST_PROXY`** must be `1` on Railway. Off, every player looks like one
